@@ -16,7 +16,7 @@ rich>=13.7
 # Deep learning
 torch>=2.6.0            # 2.6 corrige la ejecución de código en torch.load
 torchvision>=0.21.0
-tensorflow>=2.18.0
+tensorflow>=2.21.0
 transformers>=4.53.0
 datasets>=3.0
 huggingface_hub>=0.30
