@@ -1,0 +1,4 @@
+[tool.pytest.ini_options]
+testpaths = ["tests", "laboratorio"]
+pythonpath = ["."]
+addopts = "-q --doctest-modules --doctest-glob='*.md' --ignore=laboratorio-neuronal --ignore=vulkan"

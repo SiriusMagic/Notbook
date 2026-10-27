@@ -169,6 +169,6 @@ En Colab: **Archivo → Abrir cuaderno → GitHub** → `SiriusMagic/Notbook` �
 
 Reúne los cuadernos de Colab `Bh1`, `Copia de B1` (sus 18 celdas propias), `0.1v` y `Untitled2`. Se quitaron 6 celdas repetidas y los títulos sin sentido se cambiaron por nombres descriptivos.
 
-## Siguiente paso sugerido
+## Piezas pasadas a código con pruebas
 
-Cuando elijas los experimentos que valen la pena, se pueden pasar a archivos `.py` con pruebas, como se hizo con `atlas-rf`.
+Las partes reutilizables (sílabas, series sintéticas, programador de tasa de aprendizaje, inicializador de Lorenz, voto ponderado e inversión de gradiente) ya están en [`../laboratorio/`](../laboratorio) como archivos `.py` con pruebas, y con varios errores corregidos. Los cuadernos se mantienen como registro de los experimentos.
