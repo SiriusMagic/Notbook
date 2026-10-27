@@ -1,0 +1,50 @@
+# Librerías que usan los cuadernos del laboratorio neuronal.
+# Cada cuaderno instala lo que necesita con "pip install"; este archivo sirve para:
+#   - instalar todo de una vez:  pip install -r laboratorio-neuronal/requirements.txt
+#   - que Dependabot avise si alguna versión mínima tiene un fallo de seguridad.
+# Los mínimos están puestos en versiones sin vulnerabilidades conocidas.
+
+# Núcleo
+numpy>=2.0
+pandas>=2.2
+scipy>=1.13
+scikit-learn>=1.5.0
+joblib>=1.4.2
+tqdm>=4.66.3
+rich>=13.7
+
+# Deep learning
+torch>=2.6.0            # 2.6 corrige la ejecución de código en torch.load
+torchvision>=0.21.0
+tensorflow>=2.18.0
+transformers>=4.53.0
+datasets>=3.0
+huggingface_hub>=0.30
+torch_geometric>=2.6.1
+
+# Aprendizaje por refuerzo y simulación
+gymnasium>=1.0
+stable-baselines3>=2.4
+pygame>=2.6
+pyvirtualdisplay>=3.0
+
+# Gráficos e imágenes
+matplotlib>=3.9
+seaborn>=0.13
+plotly>=5.24
+altair>=5.4
+networkx>=3.3
+pillow>=11.0
+opencv-python-headless>=4.10
+imageio[ffmpeg]>=2.35
+opensimplex>=0.4.5
+
+# Texto
+pypdf>=6.0               # reemplaza a PyPDF2 (abandonado)
+pyphen>=0.16
+Levenshtein>=0.26
+llama-cpp-python>=0.3.0  # versiones < 0.2.72 tenían una vulnerabilidad en plantillas
+
+# Interfaces y red
+gradio>=5.31
+requests>=2.32.4

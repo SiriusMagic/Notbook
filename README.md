@@ -27,6 +27,13 @@ Cuadernos de Google Colab de varios años, ordenados y documentados.
 
 Todo lo borrado sigue recuperable en el historial de Git.
 
+## Seguridad y mantenimiento
+
+- **Revisión automática** (`.github/workflows/check.yml`): en cada cambio comprueba que los cuadernos tengan formato válido, que no tengan llaves de API ni resultados guardados, y avisa de errores de sintaxis.
+- **Dependabot** vigila `laboratorio-neuronal/requirements.txt`: avisa de fallos de seguridad y propone actualizaciones una vez al mes, agrupadas.
+- `torch.load` usa `weights_only=True` (solo carga pesos, no código) y los archivos `joblib` llevan un aviso de cargar solo archivos propios.
+- PDF con **pypdf** (PyPDF2 está abandonado) y PyTorch Geometric desde PyPI, sin instalaciones desde URLs externas.
+
 ## Abrir en Colab
 
 **Archivo → Abrir cuaderno → GitHub** → escribe `SiriusMagic/Notbook` y elige el cuaderno. Como el repo es privado, Colab te pedirá autorizar el acceso a GitHub la primera vez.
