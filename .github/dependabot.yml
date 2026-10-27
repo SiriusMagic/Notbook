@@ -1,0 +1,28 @@
+# Seguridad: un PR agrupado cuando una librería tiene un fallo conocido.
+# Versiones: un PR mensual agrupado con actualizaciones menores y otro con las mayores.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/laboratorio-neuronal"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    groups:
+      seguridad:
+        applies-to: security-updates
+        patterns: ["*"]
+      menores:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+        patterns: ["*"]
+      mayores:
+        applies-to: version-updates
+        update-types: ["major"]
+        patterns: ["*"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      acciones:
+        patterns: ["*"]
