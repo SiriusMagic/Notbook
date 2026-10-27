@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal y Términos - Red Vulkan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS para los mapas GeoJSON -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <style>
+        /* Estilos generales para ambos contenedores */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            background-color: #f4f7f9; /* Fondo general, puede ser cubierto por contenedores específicos */
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alineación superior por defecto */
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Estilos del Portal Cautivo */
+        .portal-container {
+            width: 100%;
+            max-width: 480px;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 30px;
+        }
+        .portal-header {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            border-bottom-left-radius: 25px;
+            border-bottom-right-radius: 25px;
+        }
+        .portal-header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #ff5722;
+            margin-bottom: 5px;
+        }
+        .portal-header p {
+            font-size: 14px;
+            color: #cbd5e1;
+        }
+        .portal-content-padding {
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .btn-free {
+            background: linear-gradient(135deg, #00c853, #64dd17);
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 200, 83, 0.3);
+            cursor: pointer;
+            border: none;
+            width: 100%;
+        }
+        .card-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .card-box h3 {
+            font-size: 13px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .input-group {
+            display: flex;
+            gap: 8px;
+        }
+        .input-group input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            outline: none;
+            font-size: 14px;
+        }
+        .btn-submit {
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .plans-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .plans-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .plans-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .plan-trigger-card {
+            background: #fff;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 18px 12px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .plan-trigger-card:hover {
+            border-color: #0284c7;
+            transform: translateY(-2px);
+        }
+        .plan-trigger-card.premium {
+            border-color: #ff5722;
+            background: #fffaf8;
+        }
+        .plan-badge {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+        .badge-basic { background: #e2e8f0; color: #475569; }
+        .badge-premium { background: #ff5722; color: white; }
+        .trigger-name { font-size: 13px; font-weight: 600; color: #1e293b; }
+        .trigger-desc { font-size: 11px; color: #64748b; line-height: 1.2; }
+
+        /* Contenedor del Mapa Vectorial con Leaflet */
+        .vulkan-map-wrapper {
+            background: #121212;
+            border: 1px solid #222;
+            border-radius: 16px;
+            padding: 16px;
+            color: #fff;
+        }
+        .map-header-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #geojsonMap {
+            width: 100%;
+            height: 250px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            z-index: 1;
+        }
+
+        /* Estilos del Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .modal-content {
+            background: #ffffff;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h2 { font-size: 18px; color: #0f172a; }
+        .close-btn {
+            background: #f1f5f9;
+            border: none;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            font-size: 16px;
+            cursor: pointer;
+            color: #64748b;
+        }
+        .modal-body-specs {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.4;
+        }
+        .duration-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            text-decoration: none;
+            color: inherit;
+            background: #fff;
+            transition: background 0.2s;
+        }
+        .duration-option:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+        .duration-info .days { font-weight: 600; font-size: 14px; color: #0f172a; }
+        .duration-info .rate { font-size: 11px; color: #64748b; }
+        .duration-price { font-weight: 700; font-size: 16px; color: #0284c7; }
+        .duration-option.premium-opt .duration-price { color: #ff5722; }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .contact-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 12px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .contact-card h4 { font-size: 11px; color: #475569; font-weight: 600; }
+        .qr-placeholder {
+            width: 60px; height: 60px;
+            background: #e2e8f0; border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: #64748b;
+        }
+        .btn-wa {
+            background: #25d366; color: white;
+            text-decoration: none; padding: 6px 12px;
+            border-radius: 6px; font-size: 11px; font-weight: 600; width: 100%;
+        }
+        .portal-legal-footer {
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .portal-legal-footer a {
+            color: #0284c7;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Estilos de Términos y Condiciones */
+        .terms-container {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            width: 100%;
+            max-width: 800px;
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+        .terms-container h1 {
+            font-size: 24px;
+            color: #fff;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        .terms-subtitle {
+            font-size: 13px;
+            color: #38bdf8;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .terms-container h2 {
+            font-size: 16px;
+            color: #f8fafc;
+            margin-top: 24px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .terms-container p, .terms-container li {
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: #94a3b8;
+        }
+        .terms-container ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        .highlight-box {
+            background: #0f172a;
+            border-left: 4px solid #ff5722;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+        .btn-back-terms {
+            display: inline-block;
+            margin-top: 30px;
+            background: #0284c7;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .btn-back-terms:hover {
+            background: #0369a1;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="mainContentArea">
+        <!-- Portal Cautivo -->
+        <div id="portalView" class="portal-container">
+            <div class="portal-header">
+                <h1>VULKAN</h1>
+                <p>Red Malla de Alta Velocidad</p>
+            </div>
+
+            <div class="portal-content-padding">
+                <button class="btn-free" onclick="activarPruebaGratis()">⚡ 30 MINUTOS GRATIS prueba la velocidad</button>
+
+                <div class="card-box">
+                    <h3>Acceso con Ticket o Cédula</h3>
+                    <form action="$(link-login-only)" method="post">
+                        <input type="hidden" name="dst" value="$(link-orig)">
+                        <input type="hidden" name="popup" value="true">
+                        <div class="input-group">
+                            <input type="text" name="username" placeholder="Código PIN o Cédula" id="accessCode" required>
+                            <input type="hidden" name="password" value="">
+                            <button type="submit" class="btn-submit">Entrar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="plans-section">
+                    <div class="plans-title">🚀 Elige tu Plan de Internet Ilimitado</div>
+                    <div class="plans-grid">
+                        <div class="plan-trigger-card" onclick="openModal('modalBasico')">
+                            <span class="plan-badge badge-basic">Básico</span>
+                            <div class="trigger-name">Plan Básico</div>
+                            <div class="trigger-desc">⚡ 15 Mbps<br>📱 Máx. 2 equipos</div>
+                        </div>
+                        <div class="plan-trigger-card premium" onclick="openModal('modalPremium')">
+                            <span class="plan-badge badge-premium">Premium</span>
+                            <div class="trigger-name">Plan Pro</div>
+                            <div class="trigger-desc">🚀 50 Mbps<br>⭐ Alta Prioridad</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenedor del Mapa GeoJSON interactivo -->
+                <div class="vulkan-map-wrapper">
+                    <div class="map-header-title">
+                        <span>🗺️ Cobertura Saraguro (Vectorial)</span>
+                        <span style="font-size: 10px; color: #2ecc71;">● En Línea</span>
+                    </div>
+                    <div id="geojsonMap"></div>
+                </div>
+
+                <div class="contact-grid">
+                    <div class="contact-card">
+                        <h4>ÁREA COMERCIAL</h4>
+                        <div class="qr-placeholder">[QR Ventas]</div>
+                        <a href="https://wa.me/593900000000" target="_blank" class="btn-wa">WhatsApp</a>
+                    </div>
+                    <div class="contact-card">
+                        <h4>SOPORTE TÉCNICO</h4>
+                        <div class="qr-placeholder">[QR Soporte]</div>
+                        <a href="https://wa.me/593900000000" target="_blank" class="btn-wa">WhatsApp</a>
+                    </div>
+                </div>
+
+                <div class="portal-legal-footer">
+                    <div>Conoce más de nosotros en <a href="https://www.vulkan.com" target="_blank">www.vulkan.com</a></div>
+                    <div>Prohibida la saturación de red, uso de torrents o descargas masivas ilegales.</div>
+                    <div>© 2026 Vulkan - Todos los derechos reservados</div>
+                    <div><a href="#" onclick="showTermsView(); return false;">Términos y Condiciones</a></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Términos y Condiciones (inicialmente oculto) -->
+        <div id="termsView" class="terms-container" style="display: none;">
+            <h1>Términos y Condiciones de Servicio</h1>
+            <div class="terms-subtitle">Red Malla Urbana Vulkan | Saraguro, Ecuador</div>
+
+            <p>El acceso, navegación y uso del servicio de internet inalámbrico y de fibra óptica proporcionado por <strong>Red Vulkan</strong> (en adelante, "La Empresa") a través de sus portales cautivos, nodos de malla y pasarelas de pago implica la aceptación absoluta, incondicional y vinculante de los presentes Términos y Condiciones por parte de cualquier usuario o suscriptor ("El Cliente").</p>
+
+            <h2>1. Naturaleza del Servicio y Disponibilidad ("Tal Como Está")</h2>
+            <p>El servicio de conectividad se ofrece bajo la modalidad de "mejor esfuerzo", sujeto a condiciones técnicas, interferencias físicas urbanas, capacidad de los nodos de transmisión y factores ambientales externos. La Empresa no garantiza una disponibilidad ininterrumpida del 100% y se exime de responsabilidad por caídas de servicio derivadas de cortes de energía eléctrica locales, fallos de proveedores troncales, mantenimientos imprevistos o eventos de fuerza mayor.</p>
+
+            <h2>2. Limitación Estricta de Responsabilidad Financiera</h2>
+            <p>En el grado máximo permitido por la ley aplicable, la responsabilidad total de Red Vulkan por cualquier reclamación, daño, pérdida o disputa derivada del uso del servicio se limitará estrictamente al monto total efectivamente pagado por el cliente a la empresa en concepto del plan o pase contratado durante los últimos treinta (30) días anteriores al evento disputado. La Empresa no asume responsabilidad alguna por lucro cesante, pérdida de datos o daños indirectos.</p>
+
+            <h2>3. Política de Uso Aceptable y Restricciones de Ancho de Banda</h2>
+            <p>Para garantizar la estabilidad operativa de la red de malla para todos los usuarios de la comunidad, queda terminantemente prohibido:</p>
+            <ul>
+                <li>Realizar descargas masivas automatizadas mediante redes P2P (Torrents) o minería de criptomonedas que saturen los canales de los nodos distribuidos.</li>
+                <li>Utilizar la red para la transmisión, almacenamiento o difusión de contenido ilícito, fraudulento, protegido por derechos de autor sin autorización o material que atente contra la seguridad pública.</li>
+                <li>Conectar routers, repetidores o pasarelas secundarias no autorizadas para revender o redistribuir la señal de internet de manera comercial o fraudulenta.</li>
+            </ul>
+
+            <div class="highlight-box">
+                <strong>Suspensión Inmediata:</strong> La Empresa se reserva el derecho unilateral y sin previo aviso de bloquear, suspender o revocar el acceso a la red de cualquier usuario que viole estas disposiciones técnicas o legales, sin derecho a ningún tipo de reembolso económico.
+            </div>
+
+            <h2>4. Exoneración por Dispositivos y Ciberseguridad</h2>
+            <p>El Cliente es el único responsable de la seguridad de sus dispositivos personales (smartphones, computadoras, tablets). Red Vulkan no asume ninguna responsabilidad por ataques cibernéticos, intrusiones, pérdida de información o infecciones por software malicioso (malware) que puedan ocurrir en los equipos del usuario durante su navegación.</p>
+
+            <h2>5. Modificaciones del Servicio y de los Términos</h2>
+            <p>Red Vulkan se reserva el derecho de modificar, actualizar o enmendar las tarifas, especificaciones de velocidad de los planes (Básico y Pro) y las cláusulas de los presentes términos en cualquier momento, los cuales entrarán en vigor de forma inmediata tras su publicación digital en los canales oficiales de la empresa.</p>
+
+            <a href="#" onclick="showPortalView(); return false;" class="btn-back-terms">← Volver al Portal Cautivo</a>
+        </div>
+    </div>
+
+    <!-- Modales de Planes (mantenerlos fuera de las vistas principales pero dentro del body) -->
+    <div id="modalBasico" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Plan Básico (15 Mbps)</h2>
+                <button class="close-btn" onclick="closeModal('modalBasico')">✕</button>
+            </div>
+            <div class="modal-body-specs">🛡️ <b>Beneficios:</b> Navegación estable, redes sociales y WhatsApp.</div>
+            <a href="https://buy.stripe.com/link-basico-30dias" target="_blank" class="duration-option">
+                <div class="duration-info"><div class="days">30 Días (Mensual)</div></div>
+                <div class="duration-price">$25.00</div>
+            </a>
+        </div>
+    </div>
+
+    <div id="modalPremium" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="color: #ff5722;">Plan Premium Pro (50 Mbps)</h2>
+                <button class="close-btn" onclick="closeModal('modalPremium')">✕</button>
+            </div>
+            <div class="modal-body-specs">⭐ <b>Beneficios:</b> Triple velocidad y máxima prioridad.</div>
+            <a href="https://buy.stripe.com/link-premium-30dias" target="_blank" class="duration-option premium-opt">
+                <div class="duration-info"><div class="days">30 Días Pro (Mensual)</div></div>
+                <div class="duration-price">$45.00</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Leaflet JS y scripts personalizados para el manejo de vistas -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        let map; // Declarar 'map' globalmente para poder re-inicializar o invalidar
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        window.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; }
+        function activarPruebaGratis() { alert('¡Activando 30 min gratis en Red Vulkan!'); }
+
+        function initializeMap() {
+            if (map) map.remove(); // Eliminar mapa existente si ya hay uno
+            map = L.map('geojsonMap', { zoomControl: false }).setView([-3.6215, -79.2455], 15);
+
+            // Capa de mapa oscuro compatible con el diseño (con la clave API)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{@2x}.png?key=cb1_3zao_1_11ed55c518feaf3d9b1e391c', {
+                maxZoom: 19
+            }).addTo(map);
+
+            // Nodos con punto azul y radio de cobertura verde
+            const nodes = [
+                { name: "Parque Central", lat: -3.6215, lng: -79.2455 },
+                { name: "Parque del Sombrero", lat: -3.6190, lng: -79.2430 }
+            ];
+
+            nodes.forEach(n => {
+                L.circle([n.lat, n.lng], {
+                    color: '#2ecc71',
+                    fillColor: '#2ecc71',
+                    fillOpacity: 0.2,
+                    radius: 120
+                }).addTo(map);
+
+                L.circleMarker([n.lat, n.lng], {
+                    radius: 6,
+                    color: '#fff',
+                    weight: 2,
+                    fillColor: '#3498db',
+                    fillOpacity: 1
+                }).bindPopup(`<b>${n.name}</b><br>Nodo Activo Vulkan`).addTo(map);
+            });
+        }
+
+        function showPortalView() {
+            document.getElementById('portalView').style.display = 'flex'; // Portal es flex
+            document.getElementById('termsView').style.display = 'none';
+            // Asegurarse de que el mapa se inicialice solo cuando su contenedor es visible
+            setTimeout(() => { // Pequeño retraso para asegurar que el DOM está listo y el contenedor visible
+                initializeMap();
+                if (map) map.invalidateSize(); // Asegurarse de que Leaflet ajuste su tamaño
+            }, 0); // Usar 0 para ejecutar tan pronto como sea posible en la cola de eventos
+        }
+
+        function showTermsView() {
+            document.getElementById('portalView').style.display = 'none';
+            document.getElementById('termsView').style.display = 'block'; // Términos es block
+        }
+
+        // Mostrar el portal por defecto al cargar la página
+        window.onload = showPortalView;
+    </script>
+</body>
+</html>
