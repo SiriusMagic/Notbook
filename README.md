@@ -6,14 +6,14 @@ Cuadernos de Google Colab de varios años, ordenados y documentados.
 
 | Carpeta | Qué es |
 |---|---|
-| [`laboratorio-neuronal/`](./laboratorio-neuronal) | Experimentos con redes neuronales (neuronas con memoria, activaciones adaptativas, RL, grafos, atención, modelos bioinspirados). Un solo cuaderno con índice por temas. |
+| [`laboratorio-neuronal/`](./laboratorio-neuronal) | Experimentos con redes neuronales en 9 cuadernos por tema: texto, capas y activaciones, neuronas alternativas, visión, atención, refuerzo, grafos, optimización y notas. |
 | [`vulkan/`](./vulkan) | Portal de acceso de la red Wi-Fi Vulkan (`index.html`). |
 
 ## Qué pasó con cada cuaderno original
 
 | Cuaderno | Destino |
 |---|---|
-| `Bh1` | Base de `laboratorio-neuronal`. |
+| `Bh1` | Base de `laboratorio-neuronal`, dividido en 9 cuadernos por tema. |
 | `Copia de B1` | Sus 18 celdas propias se añadieron a `laboratorio-neuronal`. |
 | `0.1v`, `Untitled2` | Añadidos a `laboratorio-neuronal` como prototipos pequeños. |
 | `Copia de vulkan` | Convertido en `vulkan/index.html`. |
@@ -25,7 +25,7 @@ Cuadernos de Google Colab de varios años, ordenados y documentados.
 | `Copia de Untitled1` | Borrado: contenía datos personales. |
 | `Copia de Untitled0/2/3/6/7`, `Untitled1`, `Untitled4`, `Copia de S.C.I.M.` | Borrados: vacíos. |
 
-Todo lo borrado sigue recuperable en el historial de Git (commit `8d84cc5`).
+Todo lo borrado sigue recuperable en el historial de Git.
 
 ## Abrir en Colab
 
