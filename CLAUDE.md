@@ -1,6 +1,6 @@
 # Notbook
 
-Cuadernos de Google Colab ordenados: `laboratorio-neuronal/` (9 cuadernos de experimentos por tema) y `vulkan/` (portal Wi-Fi). Repo privado.
+Cuadernos de Google Colab ordenados: `laboratorio-neuronal/` (9 cuadernos de experimentos por tema), `laboratorio/` (piezas reutilizables en `.py` con pruebas) y `vulkan/` (portal Wi-Fi). Repo privado.
 
 ## Comandos
 
@@ -8,6 +8,7 @@ Cuadernos de Google Colab ordenados: `laboratorio-neuronal/` (9 cuadernos de exp
 pip install nbformat
 python .github/scripts/check_notebooks.py   # formato, sintaxis, llaves y resultados guardados
 pip install -r laboratorio-neuronal/requirements.txt   # todas las librerías (pesado)
+pip install -r laboratorio/requirements.txt && pytest   # pruebas de laboratorio/ (torch opcional)
 ```
 
 ## Reglas del dueño (aplican a todo cambio)

@@ -3,7 +3,7 @@
 version: 2
 updates:
   - package-ecosystem: "pip"
-    directory: "/laboratorio-neuronal"
+    directories: ["/laboratorio-neuronal", "/laboratorio"]
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 3

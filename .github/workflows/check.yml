@@ -18,3 +18,15 @@ jobs:
           python-version: "3.12"
       - run: pip install nbformat
       - run: python .github/scripts/check_notebooks.py
+
+  pruebas:
+    # Pruebas del paquete laboratorio/ (piezas sacadas de los cuadernos).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r laboratorio/requirements.txt
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: pytest

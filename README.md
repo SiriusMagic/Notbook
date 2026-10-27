@@ -7,6 +7,7 @@ Cuadernos de Google Colab de varios años, ordenados y documentados.
 | Carpeta | Qué es |
 |---|---|
 | [`laboratorio-neuronal/`](./laboratorio-neuronal) | Experimentos con redes neuronales en 9 cuadernos por tema: texto, capas y activaciones, neuronas alternativas, visión, atención, refuerzo, grafos, optimización y notas. |
+| [`laboratorio/`](./laboratorio) | Piezas útiles sacadas de los cuadernos como código `.py` con pruebas: sílabas del español, series de tiempo sintéticas, programador de tasa de aprendizaje, inicializador de Lorenz, voto ponderado y capa de inversión de gradiente. |
 | [`vulkan/`](./vulkan) | Portal de acceso de la red Wi-Fi Vulkan (`index.html`). |
 
 ## Qué pasó con cada cuaderno original
@@ -29,8 +30,8 @@ Todo lo borrado sigue recuperable en el historial de Git.
 
 ## Seguridad y mantenimiento
 
-- **Revisión automática** (`.github/workflows/check.yml`): en cada cambio comprueba que los cuadernos tengan formato válido, que no tengan llaves de API ni resultados guardados, y avisa de errores de sintaxis.
-- **Dependabot** vigila `laboratorio-neuronal/requirements.txt`: avisa de fallos de seguridad y propone actualizaciones una vez al mes, agrupadas.
+- **Revisión automática** (`.github/workflows/check.yml`): en cada cambio comprueba que los cuadernos tengan formato válido, que no tengan llaves de API ni resultados guardados, y avisa de errores de sintaxis. También corre las pruebas de `laboratorio/` (`pytest`).
+- **Dependabot** vigila `laboratorio-neuronal/requirements.txt` y `laboratorio/requirements.txt`: avisa de fallos de seguridad y propone actualizaciones una vez al mes, agrupadas.
 - `torch.load` usa `weights_only=True` (solo carga pesos, no código) y los archivos `joblib` llevan un aviso de cargar solo archivos propios.
 - PDF con **pypdf** (PyPDF2 está abandonado) y PyTorch Geometric desde PyPI, sin instalaciones desde URLs externas.
 
