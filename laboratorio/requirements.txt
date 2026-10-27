@@ -1,5 +1,5 @@
 # Necesario para el paquete laboratorio/ y sus pruebas.
-numpy>=2.0
+numpy>=2.5.4
 pytest>=9.1.1
 scikit-learn>=1.9.1     # solo una prueba del ensamble con modelos reales
 # PyTorch es opcional (capas_torch.py). En CI se instala la versión para CPU:
