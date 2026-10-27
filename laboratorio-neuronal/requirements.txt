@@ -24,7 +24,7 @@ torch_geometric>=2.8.1
 
 # Aprendizaje por refuerzo y simulación
 gymnasium>=1.0
-stable-baselines3>=2.4
+stable-baselines3>=2.9.0
 pygame>=2.6
 pyvirtualdisplay>=3.0
 
