@@ -14,7 +14,7 @@ tqdm>=4.66.3
 rich>=15.0.0
 
 # Deep learning
-torch>=2.6.0            # 2.6 corrige la ejecución de código en torch.load
+torch>=2.14.1            # 2.6 corrige la ejecución de código en torch.load
 torchvision>=0.21.0
 tensorflow>=2.21.0
 transformers>=4.53.0
