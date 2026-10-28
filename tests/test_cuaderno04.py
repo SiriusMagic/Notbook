@@ -48,3 +48,12 @@ def test_arquitecturas_de_investigacion():
 def test_corren_en_el_banco(pieza):
     corr = correr(pieza, "lunas", config=Config(epocas=150, semillas=(0,), medir=False))
     assert not corr[0].fallo and corr[0].valor > 0.6
+
+
+def test_cnn_decorrelada_mide_despues_de_la_activacion():
+    """La covarianza se mide sobre lo que pasa a la capa siguiente (después de BatchNorm y ReLU)."""
+    t = cargar_tarea("digitos")
+    m = crear_modelo(PIEZAS["estandar"], t, "cnn_decorrelada", 8)
+    m.train()
+    m(t.x_entreno[:8])
+    assert len(m.extractor.mapas) == 2 and all((mapa >= 0).all() for mapa in m.extractor.mapas)  # ya pasaron por ReLU

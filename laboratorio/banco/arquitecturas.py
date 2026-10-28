@@ -71,7 +71,7 @@ class ExtractorCNN(nn.Module):
 class ExtractorCNNDecorrelada(ExtractorCNN):
     """Tu CNN auto-decorrelada (cuaderno 04, AODC-NN): la CNN normal, más una pérdida que castiga que los mapas
     de una misma convolución se parezcan (covarianza entre filtros sobre los píxeles de cada imagen, λ = 1e-4 por
-    capa, como en el cuaderno). Pasada de TensorFlow a PyTorch; mismos bloques que la CNN normal para que la
+    capa, como en el cuaderno), medida sobre los mapas ya activados. Pasada de TensorFlow a PyTorch; mismos bloques que la CNN normal para que la
     única diferencia sea la pérdida.
     """
 
@@ -79,8 +79,12 @@ class ExtractorCNNDecorrelada(ExtractorCNN):
         super().__init__(pieza, forma)
         self.lambda_ = lambda_
         self.mapas: list[torch.Tensor] = []
-        for m in self.red:
-            if isinstance(m, nn.Conv2d):
+        # Se mide después de BatchNorm y de la activación (en el cuaderno la convolución ya traía la ReLU).
+        # Medirlo antes de BatchNorm dejaría «hacer trampa»: achicar los pesos baja la covarianza y BatchNorm
+        # devuelve la misma escala, sin que los mapas que siguen queden menos parecidos.
+        modulos = list(self.red)
+        for anterior, m in zip(modulos, modulos[1:]):
+            if isinstance(anterior, nn.BatchNorm2d):
                 m.register_forward_hook(lambda _m, _i, out: self.mapas.append(out) if self.training else None)
 
     def forward(self, x):
