@@ -340,6 +340,29 @@ Limpieza del cuaderno 05 (de 37 a 13 celdas):
 - La atención suave con RL tenía 4 versiones para texto y 11 para imágenes; se dejaron la final de texto y dos de imágenes (con tus imágenes y con MNIST).
 - Se quitaron un AttentiveLinear repetido, copias del synaptic tagging y de la neurona dendrítica (ya en el banco desde el 02) y una instalación suelta.
 
+## Cuaderno 07: grafos (parte no generativa)
+
+En `piezas_07.py`.
+
+| Pieza | Qué es | De dónde |
+|---|---|---|
+| `anti_gradiente` | extractor → capa de inversión de gradiente (GRL, λ = 1) → clasificador | 07 · GradientReversal |
+
+Fallo de diseño: en el cuaderno la GRL va en el **camino principal**, así que el extractor aprende a empeorar la misma tarea que el clasificador intenta resolver. En la industria (DANN, Ganin y Lempitsky, 2015) la GRL va en una **rama aparte**, delante de un clasificador de «dominio» (de qué conjunto viene cada dato). Así los rasgos sirven igual en los dos dominios sin dañar la tarea principal.
+
+### Resultados
+
+Informe completo: [`resultados-07.md`](resultados-07.md).
+
+- **Anti-gradiente**: peor en 5 de 6 tareas (dígitos 37 % contra 97 %, XOR 53 % contra 98 %). En lunas cuenta como empate solo por la enorme variación entre semillas (67 % ± 32).
+- Lo demás del cuaderno 07 son simulaciones y dibujos sin una tarea que medir (neuronas espaciales, visualizaciones de grafos), los modelos de grafos de la industria (GCN y GAT con Cora) y la parte generativa (HCMG, D-ReG), que se mide al final.
+
+Limpieza del cuaderno 07 (de 51 a 23 celdas):
+- Se quitaron las copias con nombres en latín de HCMG y de la inversión de gradiente.
+- Se dejó un solo dibujo de grafos ramificados (había 5).
+- Se quitaron las demos de BERT repetidas del cuaderno 03, la neurona resonante repetida del 02, una neurona escalón básica, una celda toda comentada y la «red inversa» (una regresión lineal al revés, sin una idea nueva).
+- Se arregló una celda que empezaba con una palabra suelta («Un») y no corría.
+
 **Agregar una idea nueva**: escribe la capa como `nn.Module(entradas, salidas)` y añádela a `PIEZAS` en `piezas.py` (o en `piezas_02.py`). Si tiene una regla que se aplica después de cada paso (como las mutaciones de SMA o las memorias), ponle un método `despues_del_paso(perdida, error, epoca)`. Si la idea es la forma de conectar las capas, usa `red=lambda entradas, salidas, ocultas: TuRed(...)`.
 
 ## Primeros resultados
