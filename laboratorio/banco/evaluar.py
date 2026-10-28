@@ -21,19 +21,36 @@ import torch
 import torch.nn.functional as F
 
 from .piezas import PIEZAS, Red, contar_parametros
-from .tareas import TAREAS, Tarea, cargar_tarea
+from .tareas import SEMILLA_DATOS, TAREAS, Tarea, cargar_tarea
 
 
 @dataclass(frozen=True)
 class Config:
-    epocas: int | None = None  # None = las que indica la tarea
+    epocas: int | None = None  # máximo de épocas; None = las que indica la tarea
     lr: float = 0.01
     ocultas: int = 32
     semillas: tuple[int, ...] = (0, 1, 2, 3, 4)
+    lote: int | None = None  # tamaño de lote; None = el de la tarea (o todo junto en las pequeñas)
+    paciencia: int | None = None  # parada temprana: épocas sin mejorar en validación antes de cortar
+    min_mejora: float = 0.0  # cuánto tiene que mejorar la validación para contar como mejora
+    validacion: float = 0.15  # parte del entrenamiento que se separa para decidir la parada
+    guardar: str | None = None  # carpeta donde guardar el mejor modelo de cada corrida
 
 
-# Registro de evaluaciones «pieza/tarea». Por defecto todas contra todas con la misma config.
+# Registro de evaluaciones «pieza/tarea» (como el registro de openai/evals).
+# Tareas pequeñas: todo junto y épocas fijas. Tareas reales: por lotes, lr más baja,
+# parada temprana y 3 semillas (tardan más).
+CONFIG_REAL = Config(lr=0.001, paciencia=5, semillas=(0, 1, 2))
 EVALUACIONES: dict[str, Config] = {f"{p}/{t}": Config() for p in PIEZAS for t in TAREAS}
+
+
+def _registrar_reales() -> None:
+    from .datos_reales import FUENTES
+
+    EVALUACIONES.update({f"{p}/{t}": CONFIG_REAL for p in PIEZAS for t in FUENTES})
+
+
+_registrar_reales()
 
 
 @dataclass
@@ -69,36 +86,116 @@ def _medir(tarea: Tarea, salida, objetivo) -> float:
     return float(F.mse_loss(salida, objetivo))
 
 
+def _predecir(modelo, x: torch.Tensor, lote: int = 4096) -> torch.Tensor:
+    """Predice por partes para no llenar la memoria con conjuntos grandes."""
+    return torch.cat([modelo(x[i : i + lote]) for i in range(0, len(x), lote)])
+
+
+def _estado_extra(modelo) -> dict:
+    """Lo que no está en state_dict pero define a la red (p. ej. las activaciones mutadas de SMA)."""
+    return {n: list(m.current_activations) for n, m in modelo.named_modules() if hasattr(m, "current_activations")}
+
+
+def _poner_estado_extra(modelo, extra: dict) -> None:
+    for n, m in modelo.named_modules():
+        if n in extra:
+            m.current_activations = list(extra[n])
+
+
+def ruta_modelo(carpeta: str | Path, pieza: str, tarea: str, semilla: int) -> Path:
+    return Path(carpeta) / f"{pieza}__{tarea}__s{semilla}.pt"
+
+
+def cargar_modelo(ruta: str | Path) -> Red:
+    """Vuelve a crear una red guardada por el banco (solo pesos: weights_only=True)."""
+    d = torch.load(ruta, weights_only=True)
+    modelo = Red(PIEZAS[d["pieza"]], d["entradas"], d["salidas"], d["ocultas"])
+    modelo.load_state_dict(d["pesos"])
+    _poner_estado_extra(modelo, d["extra"])
+    modelo.eval()
+    return modelo
+
+
 def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = Config()) -> Corrida:
-    """Entrena una red con la pieza sobre la tarea (lote completo, Adam) y la mide en prueba."""
+    """Entrena una red con la pieza sobre la tarea (Adam) y la mide en prueba.
+
+    - Con ``lote`` entrena por lotes (necesario en conjuntos grandes); si no, todo junto.
+    - Con ``paciencia`` separa una parte para validación, corta cuando deja de
+      mejorar y vuelve a los pesos de la mejor época (parada temprana).
+    - Con ``guardar`` escribe el mejor modelo en disco; se recupera con ``cargar_modelo``.
+    """
     t = cargar_tarea(tarea) if isinstance(tarea, str) else tarea
+    x_e, y_e = t.x_entreno, t.y_entreno
+    x_v = y_v = None
+    if config.paciencia:
+        # La misma división de validación para todas las piezas (depende de los datos, no de la red).
+        orden = torch.randperm(len(x_e), generator=torch.Generator().manual_seed(SEMILLA_DATOS))
+        n_v = max(1, int(len(x_e) * config.validacion))
+        x_v, y_v = x_e[orden[:n_v]], y_e[orden[:n_v]]
+        x_e, y_e = x_e[orden[n_v:]], y_e[orden[n_v:]]
+
     torch.manual_seed(semilla)
     modelo = Red(PIEZAS[pieza], t.entradas, t.salidas, config.ocultas)
     opt = torch.optim.Adam(modelo.parameters(), lr=config.lr)
     epocas = config.epocas or t.epocas
+    lote = config.lote or t.lote
+    barajador = torch.Generator().manual_seed(semilla)
+    signo = 1 if t.mayor_es_mejor else -1
+    mejor, mejor_epoca, sin_mejora = -math.inf, -1, 0
+    mejor_estado = None
     inicio = time.perf_counter()
     perdida = math.nan
     fallo = False
-    modelo.train()
+    epoca = -1
     for epoca in range(epocas):
-        salida = modelo(t.x_entreno)
-        loss = _perdida(t, salida, t.y_entreno)
-        if not torch.isfinite(loss):
-            fallo = True  # la red «explotó»: cuenta como resultado malo, no como error del banco
+        modelo.train()
+        indices = torch.randperm(len(x_e), generator=barajador) if lote else None
+        partes = [indices[i : i + lote] for i in range(0, len(x_e), lote)] if lote else [None]
+        for parte in partes:
+            xb, yb = (x_e, y_e) if parte is None else (x_e[parte], y_e[parte])
+            salida = modelo(xb)
+            loss = _perdida(t, salida, yb)
+            if not torch.isfinite(loss):
+                fallo = True  # la red «explotó»: cuenta como resultado malo, no como error del banco
+                break
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+            perdida = loss.item()
+            modelo.despues_del_paso(perdida=perdida, error=_error(t, salida.detach(), yb), epoca=epoca)
+        if fallo:
             break
-        opt.zero_grad()
-        loss.backward()
-        opt.step()
-        perdida = loss.item()
-        modelo.despues_del_paso(perdida=perdida, error=_error(t, salida.detach(), t.y_entreno), epoca=epoca)
+        if config.paciencia:
+            modelo.eval()
+            with torch.no_grad():
+                valor_v = _medir(t, _predecir(modelo, x_v), y_v)
+            if math.isfinite(valor_v) and signo * valor_v > mejor + config.min_mejora:
+                mejor, mejor_epoca, sin_mejora = signo * valor_v, epoca, 0
+                mejor_estado = ({k: v.detach().clone() for k, v in modelo.state_dict().items()}, _estado_extra(modelo))
+            else:
+                sin_mejora += 1
+                if sin_mejora >= config.paciencia:
+                    break
+    if mejor_estado is not None:
+        modelo.load_state_dict(mejor_estado[0])
+        _poner_estado_extra(modelo, mejor_estado[1])
     modelo.eval()
     with torch.no_grad():
-        salida_e = modelo(t.x_entreno)
-        valor_entreno = _medir(t, salida_e, t.y_entreno) if not fallo and torch.isfinite(salida_e).all() else math.nan
-        salida = modelo(t.x_prueba)
+        salida_e = _predecir(modelo, x_e)
+        valor_entreno = _medir(t, salida_e, y_e) if not fallo and torch.isfinite(salida_e).all() else math.nan
+        salida = _predecir(modelo, t.x_prueba)
         valor = _medir(t, salida, t.y_prueba) if not fallo and torch.isfinite(salida).all() else math.nan
     fallo = fallo or math.isnan(valor)
     detalle = {"mutaciones": sum(getattr(m, "mutaciones", 0) for m in modelo.modules() if m is not modelo)}
+    if config.paciencia:
+        detalle.update(epocas_entrenadas=epoca + 1, mejor_epoca=mejor_epoca + 1, validacion=round(signo * mejor, 6))
+    if config.guardar and not fallo:
+        ruta = ruta_modelo(config.guardar, pieza, t.nombre, semilla)
+        ruta.parent.mkdir(parents=True, exist_ok=True)
+        torch.save({"pieza": pieza, "tarea": t.nombre, "semilla": semilla, "entradas": t.entradas,
+                    "salidas": t.salidas, "ocultas": config.ocultas, "pesos": modelo.state_dict(),
+                    "extra": _estado_extra(modelo), "valor_prueba": valor}, ruta)
+        detalle["modelo"] = str(ruta)
     return Corrida(pieza, t.nombre, semilla, t.metrica, valor, perdida, contar_parametros(modelo),
                    round(time.perf_counter() - inicio, 3), fallo, valor_entreno, {k: v for k, v in detalle.items() if v})
 

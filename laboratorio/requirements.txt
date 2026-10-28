@@ -3,5 +3,7 @@ numpy>=2.5.4
 pytest>=9.1.1
 scikit-learn>=1.9.1     # tareas del banco y prueba del ensamble
 scipy>=1.13             # prueba t del banco de evaluación
+datasets>=4.0           # tareas reales del banco (descarga de Hugging Face)
+pillow>=11.0            # imágenes de MNIST, Fashion-MNIST y CIFAR-10
 # PyTorch es opcional (capas_torch.py). En CI se instala la versión para CPU:
 #   pip install torch --index-url https://download.pytorch.org/whl/cpu

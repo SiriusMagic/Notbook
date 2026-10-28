@@ -25,6 +25,7 @@ class Tarea:
     salidas: int
     epocas: int
     descripcion: str
+    lote: int | None = None  # None = todo el conjunto en cada paso (tareas pequeñas)
 
     @property
     def metrica(self) -> str:
@@ -116,8 +117,11 @@ _cache: dict[str, Tarea] = {}
 
 
 def cargar_tarea(nombre: str) -> Tarea:
-    if nombre not in TAREAS:
-        raise KeyError(f"Tarea desconocida: {nombre}. Opciones: {', '.join(TAREAS)}")
+    """Tareas pequeñas (TAREAS) o reales de Hugging Face (datos_reales.FUENTES)."""
+    from .datos_reales import FUENTES, cargar_real
+
+    if nombre not in TAREAS and nombre not in FUENTES:
+        raise KeyError(f"Tarea desconocida: {nombre}. Opciones: {', '.join([*TAREAS, *FUENTES])}")
     if nombre not in _cache:
-        _cache[nombre] = TAREAS[nombre]()
+        _cache[nombre] = TAREAS[nombre]() if nombre in TAREAS else cargar_real(nombre)
     return _cache[nombre]

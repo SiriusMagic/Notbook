@@ -36,6 +36,32 @@ Genera `resultados/informe.md` (una tabla) y `resultados/AAAA-MM-DD.jsonl` (cada
 | `serie_seno` | predecir el siguiente valor de una onda con ruido | MSE |
 | `digitos` | dígitos 8×8 de scikit-learn (un MNIST pequeño, sin descargas) | exactitud |
 
+## Tareas con datos reales (Hugging Face)
+
+| Tarea | Datos | Tipo |
+|---|---|---|
+| `mnist` | [ylecun/mnist](https://huggingface.co/datasets/ylecun/mnist): dígitos 28×28 | imagen, 10 clases |
+| `fashion_mnist` | [zalando-datasets/fashion_mnist](https://huggingface.co/datasets/zalando-datasets/fashion_mnist): ropa 28×28 | imagen, 10 clases |
+| `cifar10` | [uoft-cs/cifar10](https://huggingface.co/datasets/uoft-cs/cifar10): fotos a color 32×32 | imagen, 10 clases |
+| `resenas_es` | [SetFit/amazon_reviews_multi_es](https://huggingface.co/datasets/SetFit/amazon_reviews_multi_es): reseñas en español | texto, 1–5 estrellas |
+| `ag_news` | [fancyzhx/ag_news](https://huggingface.co/datasets/fancyzhx/ag_news): noticias en inglés | texto, 4 temas |
+| `imdb` | [stanfordnlp/imdb](https://huggingface.co/datasets/stanfordnlp/imdb): críticas de cine | texto, positiva/negativa |
+
+```bash
+python -m laboratorio.banco --pieza ida --tarea mnist --tarea resenas_es --guardar modelos
+python -m laboratorio.banco --reales --guardar modelos      # todas (más de una hora en CPU)
+```
+
+- **Descarga y caché**: la primera vez se descargan de Hugging Face (entre 15 y 120 MB cada una). Los archivos originales quedan en `HF_HOME` y los datos ya preparados en `LABORATORIO_CACHE` (por defecto `~/.cache/laboratorio`); la segunda vez cargan en segundos. En Colab, el cuaderno 10 los guarda en Google Drive.
+- **Muestra al azar**: se toman 10 000 ejemplos para entrenar y 2 000 de prueba, barajados antes de cortar (IMDB viene ordenado por clase; sin barajar saldría una sola clase).
+- **Cómo se convierten**: las imágenes se aplanan (píxeles normalizados) y el texto pasa a un vector de 2048 números (TF-IDF). Así entran en la misma red densa de todas las piezas. Es justo para comparar piezas, no el mejor modelo posible para cada dato.
+- **Por lotes** (128) y con **tasa de aprendizaje 0,001**, que es lo normal en conjuntos grandes.
+
+## Parada temprana y modelos guardados
+
+- `--paciencia N`: se separa el 15 % del entrenamiento para validación. Si en N épocas seguidas la validación no mejora, se corta y la red **vuelve a los pesos de su mejor época**. En las tareas reales viene activada con N = 5; en las pequeñas, desactivada (`--paciencia 0` la apaga). El informe JSONL guarda cuántas épocas entrenó y cuál fue la mejor.
+- `--guardar carpeta`: guarda el mejor modelo de cada corrida como `pieza__tarea__s<semilla>.pt`. Se recupera con `cargar_modelo(ruta)`, que usa `torch.load(..., weights_only=True)` (solo pesos, nunca código). También guarda las activaciones mutadas de SMA, que no están en los pesos.
+
 ## Piezas (primera tanda)
 
 `prelu_adaptativa`, `integracion_no_lineal`, `activacion_adaptativa`, `ida`, `sma`, `umbral_dinamico`, `rmb` y `hmn` vienen del cuaderno 02; `seno` viene del 04. Cada una indica de qué celda sale.
@@ -74,4 +100,4 @@ Las piezas que necesitan su propio ciclo de entrenamiento quedan para después, 
 - algoritmos genéticos del cuaderno 03;
 - neurona DC.
 
-También falta MNIST completo. Por ahora `digitos` es su versión pequeña.
+También falta probar con redes convolucionales para imágenes y con incrustaciones para texto: hoy todas las piezas van en una red densa.
