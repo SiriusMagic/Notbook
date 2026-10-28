@@ -341,6 +341,14 @@ Limpieza del cuaderno 05 (de 37 a 13 celdas):
 - La atención suave con RL tenía 4 versiones para texto y 11 para imágenes; se dejaron la final de texto y dos de imágenes (con tus imágenes y con MNIST).
 - Se quitaron un AttentiveLinear repetido, copias del synaptic tagging y de la neurona dendrítica (ya en el banco desde el 02) y una instalación suelta.
 
+## Cuaderno 06: refuerzo y cerebro modular
+
+Piezas en `piezas_06.py`: `rl_interno` (RlNeuron), `votacion_cabezas` (DecisionVotingNet), `biomas` (NeuralBiomesModel), `cerebro_moe` y `cerebro_moe_arreglado` (CorticalMoE con REINFORCE), `talamo_top2` (ThalamusBiomeNet) y, como industria, `moe_suave` (mezcla suave de expertos). Los entornos de refuerzo del cuaderno (código Python, cubos con varios cuerpos, ReroutingNetwork) quedan para la parte final.
+
+### Resultados
+
+Detalle en `resultados-06.md`. Nada le gana a la tecnología actual: 48 de 49 comparaciones dan «igual». En la tarea caótica el cerebro modular sube a 73,8 %, pero con 12 veces más parámetros; una red estándar del mismo tamaño llega a 72,3 % y Dropout en la red chica a 77,4 %. El cerebro modular tal cual se rompe en regresión porque todos los ejemplos reciben la misma recompensa; con recompensa por ejemplo empata.
+
 ## Cuaderno 07: grafos (parte no generativa)
 
 En `piezas_07.py`.
