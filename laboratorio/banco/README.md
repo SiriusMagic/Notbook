@@ -141,7 +141,49 @@ Se copiaron casi tal cual. Lo que hubo que cambiar para que funcionaran dentro d
 - **SMA**: ahora el azar se puede repetir.
 - **Umbral dinámico**: el ajuste del bias ahora lo llama el banco.
 
-**Agregar una idea nueva**: escribe la capa como `nn.Module(entradas, salidas)` y añádela a `PIEZAS` en `piezas.py`. Si tiene una regla que se aplica después de cada paso (como las mutaciones de SMA), ponle un método `despues_del_paso(perdida, error, epoca)`.
+## Piezas (segunda tanda) y rivales de la industria
+
+En `piezas_02.py`. Ganarle a ReLU ya no basta: ahora tus piezas también compiten contra lo que se usa hoy.
+
+| Pieza | Qué es | De dónde |
+|---|---|---|
+| `gelu` | GELU (BERT, GPT) | industria |
+| `silu` | SiLU/Swish (Llama, EfficientNet) | industria |
+| `mish` | Mish (YOLOv4) | industria |
+| `elu`, `leaky_relu` | ELU y LeakyReLU | industria |
+| `residual` | capa con salto, estilo ResNet | industria |
+| `tanh` | tanh clásica: el control justo para tus piezas que usan tanh | control |
+| `memoria_errores` | recuerda las muestras con más error y las corrige tras cada paso | 02 · celdas 4-6 |
+| `memoria_gradiente` | paso extra con el promedio de los gradientes recientes | 02 · celdas 8-11 |
+| `lr_por_neurona` | ajuste extra con tasa por peso (un RMSprop casero) | 02 · celda 16 |
+| `memoria_atencion` | mezcla gradientes recordados según el parecido de la entrada | 02 · celdas 18-19 |
+| `memoria_embedding` | recuerda las pérdidas como embeddings y ajusta la capa | 02 · celdas 20-22 |
+| `memoria_atencion_embedding` | igual, con atención Q/K/V sobre la memoria | 02 · celdas 23-25 |
+| `denso_cruzada` | cada capa recibe todas las anteriores (como DenseNet) | 02 · celda 32 |
+| `densa_entrada` | igual, y además cada capa recibe la entrada original | 02 · celda 34 |
+
+En los informes las de la industria salen marcadas «(industria)». `--grupo industria` o `--grupo tuyas` corre solo unas u otras.
+
+Adaptaciones (anotadas en el código):
+- Las reglas «después del paso» las llama el banco en cada lote. En el cuaderno se llamaban a mano.
+- **Memoria de errores**: ahora sabe qué error tuvo cada muestra; antes había que pasárselo a mano.
+- **Memoria con embeddings**: en el cuaderno era la neurona de salida de una red de regresión. Aquí es una capa oculta, para poder compararla con las demás piezas.
+- **Denso-cruzada y densa de entrada**: no son una capa sino una forma de conectar capas, así que arman la red entera (`Pieza.red`).
+
+- **Arreglo de inicio**: las cuatro capas con tanh (memoria de errores, de gradiente, LR por neurona y memoria con atención) empezaban con pesos `randn × 0,1`. Así quedaban atascadas en la regresión cúbica, con 60 veces más error que ReLU, y daba igual tener la regla de memoria o no. Ahora usan el mismo inicio que `nn.Linear`.
+
+### Resultados de la segunda tanda
+
+Informe completo: [`resultados-02-memorias.md`](resultados-02-memorias.md). Son 15 piezas en 6 tareas, con 5 semillas: 90 comparaciones corregidas por comparaciones múltiples. Resultado: 🟢 1, ⚪ 86, 🔴 3.
+
+- **Ninguna de tus piezas de esta tanda gana** a la red estándar en ninguna tarea.
+- **Memoria de errores** y **LR por neurona** salen **peores** en regresión cúbica (2–3 veces más error). LR por neurona también sale peor en XOR. Su paso extra después del optimizador estorba al optimizador (Adam), que ya hace ese trabajo.
+- **Memoria de gradiente** y **memoria con atención** empatan: su paso extra se parece a un *momentum*, y Adam ya lo tiene.
+- **Memoria con embeddings** (con y sin atención) y las **topologías densas** empatan, pero usan de 3 a 8 veces más parámetros.
+- De la industria, solo **GELU** gana, y solo en la serie de seno (≈ 8 % menos error). Las demás empatan con ReLU en estas tareas pequeñas.
+- **Conclusión para invertir**: en tareas pequeñas nada de esta tanda justifica más tiempo. Si quieres darles otra oportunidad, la prueba siguiente es con datos reales (`--competencia --grupo tuyas`), donde una memoria podría ayudar con datos ruidosos.
+
+**Agregar una idea nueva**: escribe la capa como `nn.Module(entradas, salidas)` y añádela a `PIEZAS` en `piezas.py` (o en `piezas_02.py`). Si tiene una regla que se aplica después de cada paso (como las mutaciones de SMA o las memorias), ponle un método `despues_del_paso(perdida, error, epoca)`. Si la idea es la forma de conectar las capas, usa `red=lambda entradas, salidas, ocultas: TuRed(...)`.
 
 ## Primeros resultados
 

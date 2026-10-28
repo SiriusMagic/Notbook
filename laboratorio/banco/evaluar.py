@@ -381,6 +381,12 @@ def _fmt(metrica: str, media: float, std: float) -> str:
     return f"{media * 100:.1f} ± {std * 100:.1f} %" if metrica == "exactitud" else f"{media:.4f} ± {std:.4f}"
 
 
+def _etiqueta(pieza: str) -> str:
+    """Nombre de la pieza; las de la industria (GELU, SiLU…) llevan una marca para no confundirlas con las tuyas."""
+    p = PIEZAS.get(pieza)
+    return f"{pieza} (industria)" if p is not None and p.industria else pieza
+
+
 def informe(comparaciones: list[Comparacion], semillas) -> str:
     """Tabla en Markdown para leer en el celular."""
     ajustado = any(not math.isnan(c.p_ajustado) for c in comparaciones)
@@ -397,11 +403,13 @@ def informe(comparaciones: list[Comparacion], semillas) -> str:
         "|---|---|---|---|---|---|---|",
     ]
     for c in comparaciones:
-        lineas.append(f"| {c.pieza} | {c.tarea} | {_fmt(c.metrica, c.pieza_media, c.pieza_std)} | "
+        lineas.append(f"| {_etiqueta(c.pieza)} | {c.tarea} | {_fmt(c.metrica, c.pieza_media, c.pieza_std)} | "
                       f"{_fmt(c.metrica, c.base_media, c.base_std)} | {_ICONO[c.veredicto]} | "
                       f"{_fmt(c.metrica, c.pieza_entreno, 0).split(' ±')[0]} | {c.parametros_pieza:,} / {c.parametros_base:,} |")
     cuenta = {v: sum(c.veredicto == v for c in comparaciones) for v in _ICONO}
     lineas += ["", "**Resumen:** " + ", ".join(f"{_ICONO[v]}: {n}" for v, n in cuenta.items()), ""]
     lineas.append("«Pieza en entreno» mucho mejor que «Pieza (prueba)» = la pieza memoriza en vez de aprender.")
+    lineas.append("Las piezas marcadas «(industria)» (GELU, SiLU, Mish…) son la tecnología de hoy: si tu pieza no "
+                  "les gana a ellas, no conviene invertir en ella aunque le gane a ReLU.")
     lineas.append("Ojo: una pieza con muchos más parámetros que la estándar tiene ventaja; compárala también con una estándar más grande.")
     return "\n".join(lineas) + "\n"

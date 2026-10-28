@@ -31,6 +31,7 @@ MUESTRA = 1000  # ejemplos usados para medir activaciones y CKA
 def capas_observadas(modelo: nn.Module) -> dict[str, nn.Module]:
     """Las capas cuyas salidas se inspeccionan: extractor (si hay) y las dos capas de la pieza."""
     red = getattr(modelo, "cabeza", modelo)
+    red = getattr(red, "topologia", red)  # piezas que son una forma de conectar las capas
     capas = {}
     if hasattr(modelo, "extractor"):
         capas["extractor"] = modelo.extractor

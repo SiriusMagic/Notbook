@@ -276,10 +276,13 @@ class Pieza:
     nombre: str
     descripcion: str
     origen: str
-    capa: Callable[[int, int], nn.Module]  # (entradas, salidas) → capa oculta con activación
+    capa: Callable[[int, int], nn.Module] | None  # (entradas, salidas) → capa oculta con activación
     # Si la pieza es una activación: cómo crearla para C canales (se usa dentro de CNN, texto y series).
     # Si es None, en esas arquitecturas la pieza solo va en la parte final (la «cabeza»).
     activacion: Callable[[int], nn.Module] | None = None
+    industria: bool = False  # True = tecnología de hoy (GELU, SiLU…): rival, no idea tuya
+    # Si la idea es una forma de conectar las capas (no una capa): (entradas, salidas, ocultas) → red completa.
+    red: Callable[[int, int, int], nn.Module] | None = None
 
 
 PIEZAS: dict[str, Pieza] = {p.nombre: p for p in [
@@ -304,18 +307,29 @@ class Red(nn.Module):
 
     def __init__(self, pieza: Pieza, entradas: int, salidas: int, ocultas: int = 32) -> None:
         super().__init__()
+        if pieza.red is not None:  # la pieza es la forma de conectar: ella arma toda la red
+            self.topologia = pieza.red(entradas, salidas, ocultas)
+            return
         self.capa1 = pieza.capa(entradas, ocultas)
         self.capa2 = pieza.capa(ocultas, ocultas)
         self.salida = nn.Linear(ocultas, salidas)
 
     def forward(self, x):
+        if hasattr(self, "topologia"):
+            return self.topologia(x)
         return self.salida(self.capa2(self.capa1(x)))
 
     def despues_del_paso(self, **contexto) -> None:
-        """Le avisa a las piezas que tienen reglas propias (umbral dinámico, mutaciones)."""
-        for m in (self.capa1, self.capa2):
+        """Le avisa a las piezas que tienen reglas propias (umbral dinámico, mutaciones, memorias)."""
+        for m in (getattr(self, "capa1", None), getattr(self, "capa2", None)):
             if hasattr(m, "despues_del_paso"):
                 m.despues_del_paso(**contexto)
+
+
+# Tanda 2 del cuaderno 02 y sus rivales de la industria (en otro archivo para no alargar este).
+from .piezas_02 import piezas_02  # noqa: E402
+
+PIEZAS.update({p.nombre: p for p in piezas_02()})
 
 
 def contar_parametros(modelo: nn.Module) -> int:
