@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 from .piezas import Pieza, Red
@@ -214,6 +215,63 @@ class ExtractorTransformer(nn.Module):
         relleno = ids == 0
         pos = self.pos[:, : ids.size(1)] if self.posicion == "aprendida" else self.pos_mod(ids)
         h = self.enc(self.emb(ids) + pos, src_key_padding_mask=relleno)
+        validos = (~relleno).unsqueeze(-1).float()
+        return (h * validos).sum(1) / validos.sum(1).clamp(min=1)
+
+
+class _CapaMascaraRL(nn.Module):
+    """Capa de Transformer con tu «atención suave con RL» (cuaderno 05): cada cabeza aprende una máscara de
+    posiciones T×T (qué token mira a cuál), con ruido Gumbel al entrenar y temperatura 0,7.
+
+    ``modo="original"``: como el cuaderno, la máscara **multiplica** los puntajes antes del softmax. Fallo de
+    diseño: una máscara ≈ 0 no bloquea la atención (softmax de 0 no es 0), solo la vuelve pareja.
+    ``modo="log"`` (arreglo): se **suma** log(máscara), así una máscara ≈ 0 sí apaga esa posición.
+
+    Pese al nombre, no usa refuerzo: el ruido Gumbel hace que la máscara aprenda con el gradiente normal.
+    El resto (normalización, red feed-forward de 128, dropout 0,1) es igual al Transformer normal del banco.
+    """
+
+    def __init__(self, dim: int, cabezas: int, largo: int, modo: str, temperatura: float = 0.7) -> None:
+        super().__init__()
+        self.h, self.d, self.modo, self.temperatura = cabezas, dim // cabezas, modo, temperatura
+        self.qkv, self.salida = nn.Linear(dim, 3 * dim), nn.Linear(dim, dim)
+        self.mascara = nn.Parameter(torch.randn(cabezas, largo, largo))
+        self.ff = nn.Sequential(nn.Linear(dim, 128), nn.ReLU(), nn.Dropout(0.1), nn.Linear(128, dim))
+        self.n1, self.n2, self.drop = nn.LayerNorm(dim), nn.LayerNorm(dim), nn.Dropout(0.1)
+
+    def forward(self, x, relleno):
+        b, t, _ = x.shape
+        q, k, v = self.qkv(x).view(b, t, 3, self.h, self.d).permute(2, 0, 3, 1, 4)
+        puntajes = q @ k.transpose(-2, -1) / self.d**0.5  # [b, h, t, t]
+        logits = self.mascara[:, :t, :t]
+        if self.training:
+            u = torch.rand_like(logits)
+            logits = (logits - torch.log(-torch.log(u + 1e-10) + 1e-10)) / self.temperatura
+        m = F.softmax(logits, dim=-1).unsqueeze(0)
+        puntajes = puntajes * m if self.modo == "original" else puntajes + torch.log(m + 1e-9)
+        puntajes = puntajes.masked_fill(relleno[:, None, None, :], float("-inf"))
+        atn = torch.nan_to_num(F.softmax(puntajes, dim=-1))
+        h = (atn @ v).transpose(1, 2).reshape(b, t, -1)
+        x = self.n1(x + self.drop(self.salida(h)))
+        return self.n2(x + self.drop(self.ff(x)))
+
+
+class ExtractorTransformerMascaraRL(nn.Module):
+    """Transformer de 2 capas y 4 cabezas (como el normal) con la máscara de posiciones aprendida en cada capa."""
+
+    def __init__(self, pieza: Pieza, vocabulario: int, largo: int, modo: str = "original", dim: int = 64,
+                 capas: int = 2) -> None:
+        super().__init__()
+        self.emb = nn.Embedding(vocabulario, dim, padding_idx=0)
+        self.pos = nn.Parameter(torch.zeros(1, largo, dim))
+        self.capas = nn.ModuleList([_CapaMascaraRL(dim, 4, largo, modo) for _ in range(capas)])
+        self.rasgos = dim
+
+    def forward(self, ids):
+        relleno = ids == 0
+        h = self.emb(ids) + self.pos[:, : ids.size(1)]
+        for capa in self.capas:
+            h = capa(h, relleno)
         validos = (~relleno).unsqueeze(-1).float()
         return (h * validos).sum(1) / validos.sum(1).clamp(min=1)
 
@@ -419,6 +477,10 @@ ARQUITECTURAS: dict[str, Arquitectura] = {a.nombre: a for a in [
     Arquitectura("transformer_jer_palabra", "Transformer con posición jerárquica palabra + sílaba", ("texto",), "ids",
                  lambda p, t: ExtractorTransformer(p, t.vocabulario, t.forma[0], posicion="jerarquica_palabra",
                                                    inicio=_inicio(t))),
+    Arquitectura("transformer_mascara_rl", "Transformer con tu máscara de atención aprendida, tal cual (cuaderno 05)",
+                 ("texto",), "ids", lambda p, t: ExtractorTransformerMascaraRL(p, t.vocabulario, t.forma[0])),
+    Arquitectura("transformer_mascara_rl_log", "Igual, sumando log(máscara) en vez de multiplicar (arreglo)",
+                 ("texto",), "ids", lambda p, t: ExtractorTransformerMascaraRL(p, t.vocabulario, t.forma[0], "log")),
     Arquitectura("fasttext", "fastText: promedio de embeddings (Facebook, 2016)", ("texto",), "ids",
                  lambda p, t: ExtractorFastText(p, t.vocabulario)),
     Arquitectura("atencion_binaria_rl", "tu agente que elige qué palabras leer, con refuerzo (cuaderno 01, celda 31)",
@@ -440,7 +502,8 @@ NATURALES = {"tabla": ("densa",), "imagen": ("cnn",), "texto": ("texto_cnn", "tr
              "serie": ("serie_cnn", "lstm")}
 
 # Arquitecturas que son ideas de tus cuadernos: compiten contra la mejor arquitectura normal de su tipo de dato.
-INVESTIGACION = {"texto": ("atencion_binaria_rl", "atencion_niveles_rl", "atencion_hebbiana"),
+INVESTIGACION = {"texto": ("atencion_binaria_rl", "atencion_niveles_rl", "atencion_hebbiana",
+                           "transformer_mascara_rl", "transformer_mascara_rl_log"),
                  "imagen": ("cnn_densa_entrada", "cnn_decorrelada"), "serie": ("rcf_recurrente",)}
 
 

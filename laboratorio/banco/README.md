@@ -311,6 +311,35 @@ Informe completo: [`resultados-04.md`](resultados-04.md). Son 24 comparaciones: 
 
 Limpieza del cuaderno 04 (de 58 a 46 celdas): se unieron las versiones de AODC (2), del papelito preguntón (RDCR ×3, NIDI y ODFE) y de RCF (3). Se quitó una celda que repetía la «densa de entrada» del cuaderno 02. La parte generativa (tripletas, interpolación de video, GAN) se mide al final, junto con los demás generativos.
 
+## Cuaderno 05: atención
+
+En `piezas_05.py` y `arquitecturas.py`.
+
+| Pieza o arquitectura | Qué es | De dónde |
+|---|---|---|
+| arquitectura `transformer_mascara_rl` | Transformer normal donde cada cabeza aprende una máscara de posiciones T×T con ruido Gumbel, que **multiplica** los puntajes (tal cual) | 05 · atención suave con RL |
+| arquitectura `transformer_mascara_rl_log` | igual, pero **suma** log(máscara) (arreglo) | 05 · atención suave con RL |
+| `atencion_salida` | AttentiveLinear: cada neurona reparte su salida con factores sigmoide(A) | 05 · atención a la salida |
+| `atencion_local` | agrega el promedio de entradas pasadas pesado por 1/error | 05 · atención local (TensorFlow) |
+
+Fallos de diseño encontrados (anotados en el código):
+- **Atención suave con RL**: la máscara **multiplica** los puntajes antes del softmax. Una máscara ≈ 0 no bloquea esa posición, solo vuelve el reparto más parejo (una prueba lo muestra). Sumar log(máscara) sí la bloquea. Además, pese al nombre, no usa refuerzo: el ruido Gumbel deja que la máscara aprenda con el gradiente normal.
+- **AttentiveLinear**: los «factores de atención» son una matriz fija, no dependen de la entrada. La capa equivale a una lineal con pesos entre 0 y 1 y sin sesgo. Como todos empiezan en ≈ 0,5, todas las neuronas de salida dan casi lo mismo y la red no logra separarlas.
+- **Atención local**: el cuaderno le pasaba siempre la pérdida de relleno 1,0, así que el peso por error nunca actuaba. Aquí recibe la pérdida real. Al evaluar, la memoria queda fija y solo agrega un vector constante.
+
+### Resultados
+
+Informe completo: [`resultados-05.md`](resultados-05.md).
+
+- **Transformer con máscara** contra el Transformer normal (reseñas en español, 5 clases, 3 semillas): **empate** en las dos versiones (original 37,9 %, arreglada 38,6 %, normal 37,0 %), con casi el doble de parámetros (1,1 millones contra 0,6). Falta probarlo con más datos y GPU (`--competencia --tipo texto`).
+- **AttentiveLinear**: se derrumba en todas las tareas (50 % en círculos y lunas, que es el azar; 26 % en dígitos).
+- **Atención local**: empata en 5 tareas y pierde en XOR.
+
+Limpieza del cuaderno 05 (de 37 a 13 celdas):
+- La atención multi-cabeza normal tenía 4 versiones; se dejó una, como referencia.
+- La atención suave con RL tenía 4 versiones para texto y 11 para imágenes; se dejaron la final de texto y dos de imágenes (con tus imágenes y con MNIST).
+- Se quitaron un AttentiveLinear repetido, copias del synaptic tagging y de la neurona dendrítica (ya en el banco desde el 02) y una instalación suelta.
+
 **Agregar una idea nueva**: escribe la capa como `nn.Module(entradas, salidas)` y añádela a `PIEZAS` en `piezas.py` (o en `piezas_02.py`). Si tiene una regla que se aplica después de cada paso (como las mutaciones de SMA o las memorias), ponle un método `despues_del_paso(perdida, error, epoca)`. Si la idea es la forma de conectar las capas, usa `red=lambda entradas, salidas, ocultas: TuRed(...)`.
 
 ## Primeros resultados
