@@ -165,8 +165,8 @@ class CapaMemoriaEmbedding(nn.Module):
     """Adaptación a capa de ``NeuronaConMemoriaEmbedding`` (celda 22) y, con ``atencion=True``, de
     ``NeuronaMemoriaAtencionEmbeddings`` (celda 25).
 
-    La capa recuerda embeddings de la pérdida de pasos anteriores. Al calcular, codifica su activación
-    promedio, la compara con la memoria (coseno, o atención con Q/K/V) y suma a toda la capa un ajuste
+    La capa recuerda embeddings de la pérdida de pasos anteriores. Al calcular, codifica la activación
+    promedio de cada ejemplo, la compara con la memoria (coseno, o atención con Q/K/V) y suma a toda la capa un ajuste
     proporcional al parecido. El original era una neurona de salida de una red de regresión; aquí la idea se
     lleva a una capa oculta para poder compararla con las demás piezas.
     """
@@ -185,13 +185,14 @@ class CapaMemoriaEmbedding(nn.Module):
     def forward(self, x):
         h = F.relu(self.fc(x))
         # Con la memoria vacía (ceros) el ajuste vale 0, pero se calcula igual para que todo reciba gradiente.
-        actual = self.encoder(h.mean().reshape(1, 1)).squeeze(0)
+        # Cada ejemplo consulta la memoria con su propia activación media: la predicción no depende del lote.
+        actual = self.encoder(h.mean(1, keepdim=True))  # [ejemplos, dim]
         if self.atencion:
             pesos = F.softmax(self.q(actual) @ self.k(self.memoria).T / self.memoria.size(1) ** 0.5, dim=-1)
-            ajuste = self.escala * torch.dot(actual, pesos @ self.v(self.memoria))
+            ajuste = self.escala * (actual * (pesos @ self.v(self.memoria))).sum(1, keepdim=True)
         else:
-            pesos = F.softmax(F.normalize(self.memoria, dim=-1) @ F.normalize(actual, dim=-1), dim=0)
-            ajuste = 0.1 * torch.dot(actual, pesos @ self.memoria)
+            pesos = F.softmax(F.normalize(actual, dim=-1) @ F.normalize(self.memoria, dim=-1).T, dim=-1)
+            ajuste = 0.1 * (actual * (pesos @ self.memoria)).sum(1, keepdim=True)
         return h + ajuste
 
     def despues_del_paso(self, perdida, **_):

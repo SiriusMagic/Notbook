@@ -56,3 +56,16 @@ def test_grupo_industria_en_la_linea_de_comandos(tmp_path):
     main(["--grupo", "industria", "--tarea", "xor", "--semillas", "2", "--epocas", "2", "--salida", str(tmp_path)])
     texto = (tmp_path / "informe.md").read_text(encoding="utf-8")
     assert "gelu (industria)" in texto and "memoria_errores" not in texto and "| ida |" not in texto
+
+
+@pytest.mark.parametrize("pieza", ["memoria_embedding", "memoria_atencion_embedding"])
+def test_memoria_embedding_no_depende_del_lote(pieza):
+    torch.manual_seed(0)
+    red = Red(PIEZAS[pieza], 4, 2, ocultas=8)
+    x = torch.randn(6, 4)
+    red.despues_del_paso(perdida=0.7, error=None, epoca=0)  # algo en la memoria
+    red.eval()
+    with torch.no_grad():
+        juntos = red(x)
+        separados = torch.cat([red(x[i : i + 1]) for i in range(len(x))])
+    assert torch.allclose(juntos, separados, atol=1e-6)
