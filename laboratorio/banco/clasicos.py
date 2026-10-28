@@ -38,6 +38,7 @@ def _modelos(tipo: str, semilla: int) -> dict:
             "Naive Bayes": GaussianNB(),
             "Random Forest": RandomForestClassifier(200, random_state=semilla, n_jobs=-1),
             "Gradient Boosting": HistGradientBoostingClassifier(random_state=semilla),
+            "Votación ponderada (cuaderno 08)": _votacion_ponderada(semilla),
         }
     return {
         "Ridge (lineal)": escalado(Ridge()),
@@ -47,6 +48,43 @@ def _modelos(tipo: str, semilla: int) -> dict:
         "Random Forest": RandomForestRegressor(200, random_state=semilla, n_jobs=-1),
         "Gradient Boosting": HistGradientBoostingRegressor(random_state=semilla),
     }
+
+
+def _votacion_ponderada(semilla: int):
+    """«weighted_vote» del cuaderno 08: 5 clasificadores (logística, KNN k=7, SVM lineal, árbol prof. 4, Naive
+    Bayes) votan con sus probabilidades, cada uno pesado por su exactitud en validación cruzada de 5 partes.
+
+    El SVM da probabilidades con ``CalibratedClassifierCV``: ``SVC(probability=True)``, que usaba el cuaderno,
+    queda obsoleto en scikit-learn 1.11."""
+    from sklearn.base import BaseEstimator, ClassifierMixin, clone
+    from sklearn.calibration import CalibratedClassifierCV
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.model_selection import KFold, cross_val_score
+    from sklearn.naive_bayes import GaussianNB
+    from sklearn.neighbors import KNeighborsClassifier
+    from sklearn.pipeline import make_pipeline
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.svm import SVC
+    from sklearn.tree import DecisionTreeClassifier
+
+    class VotacionPonderada(ClassifierMixin, BaseEstimator):
+        def fit(self, x, y):
+            base = [make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)),
+                    make_pipeline(StandardScaler(), KNeighborsClassifier(7)),
+                    make_pipeline(StandardScaler(), CalibratedClassifierCV(SVC(kernel="linear"), ensemble=False)),
+                    DecisionTreeClassifier(max_depth=4, random_state=semilla), GaussianNB()]
+            pliegues = KFold(5, shuffle=True, random_state=semilla)
+            puntajes = [cross_val_score(clone(m), x, y, cv=pliegues).mean() for m in base]
+            self.pesos_ = [p / sum(puntajes) for p in puntajes]
+            self.modelos_ = [m.fit(x, y) for m in base]
+            self.classes_ = self.modelos_[0].classes_
+            return self
+
+        def predict(self, x):
+            proba = sum(w * m.predict_proba(x) for w, m in zip(self.pesos_, self.modelos_))
+            return self.classes_[proba.argmax(1)]
+
+    return VotacionPonderada()
 
 
 def _medir(tipo: str, y, pred) -> float:

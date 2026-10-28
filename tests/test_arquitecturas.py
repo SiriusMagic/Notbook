@@ -145,7 +145,10 @@ def test_linea_de_comandos_filtra_tareas_por_arquitectura(tmp_path, capsys):
 
     main(["--arquitectura", "cnn", "--todo", "--pieza", "seno", "--semillas", "2", "--epocas", "2", "--salida", str(tmp_path)])
     salida = capsys.readouterr().out
-    assert "se omiten 5 tareas" in salida
+    from laboratorio.banco.tareas import TAREAS
+
+    omitidas = sum(1 for nombre in TAREAS if cargar_tarea(nombre).dato != "imagen")
+    assert f"se omiten {omitidas} tareas" in salida
     informe = (tmp_path / "informe.md").read_text(encoding="utf-8")
     assert "| seno | digitos |" in informe and "circulos" not in informe
     with pytest.raises(SystemExit):
