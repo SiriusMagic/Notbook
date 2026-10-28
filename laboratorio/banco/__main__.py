@@ -32,6 +32,8 @@ def _tipo_dato(tarea: str) -> str:
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(prog="python -m laboratorio.banco", description="Compara piezas de investigación con la red estándar.")
     ap.add_argument("--pieza", action="append", choices=[p for p in PIEZAS if p != "estandar"], help="se puede repetir")
+    ap.add_argument("--grupo", choices=["tuyas", "industria"],
+                    help="solo tus piezas o solo las de la industria (GELU, SiLU, Mish, ELU, LeakyReLU, residual)")
     ap.add_argument("--tarea", action="append", choices=[*TAREAS, *FUENTES], help="se puede repetir")
     ap.add_argument("--todo", action="store_true", help="todas las piezas en las tareas pequeñas")
     ap.add_argument("--reales", action="store_true", help="todas las piezas en las tareas reales de Hugging Face")
@@ -76,6 +78,8 @@ def main(argv=None) -> None:
 
     registro = Registro(a.salida)
     piezas = a.pieza or [p for p in PIEZAS if p != "estandar"]
+    if a.grupo:
+        piezas = [p for p in piezas if PIEZAS[p].industria == (a.grupo == "industria")]
     Path(a.salida).mkdir(parents=True, exist_ok=True)
 
     if a.tokenizadores:

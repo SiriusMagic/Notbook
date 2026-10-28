@@ -73,7 +73,10 @@ def _cka_promedio(modelos_a: dict, modelos_b: dict, emparejar=lambda s, semillas
 
 
 def _nombre(pieza: str, arq: str) -> str:
+    from .evaluar import _etiqueta
+
     base = NOMBRES.get(arq, arq)
+    pieza = pieza if pieza == "estandar" else _etiqueta(pieza)
     if arq in INVESTIGACION_TODAS:
         return base if pieza == "estandar" else f"{pieza} en {base}"
     return f"{base} normal" if pieza == "estandar" else f"{pieza} en {base}"
