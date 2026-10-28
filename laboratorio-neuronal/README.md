@@ -12,7 +12,7 @@ En Colab: **Archivo → Abrir cuaderno → GitHub** → `SiriusMagic/Notbook` �
 
 | Cuaderno | Tema | Secciones |
 |---|---|---|
-| [`01_texto_y_lenguaje.ipynb`](./01_texto_y_lenguaje.ipynb) | Extracción de PDF, tokenización, sílabas, agentes de RL sobre texto, BERT, difusión de texto. | 14 |
+| [`01_texto_y_lenguaje.ipynb`](./01_texto_y_lenguaje.ipynb) | Tokenización y sílabas, agentes de RL sobre texto, BERT con corrección GNN, difusión de texto. | 7 |
 | [`02_capas_y_activaciones.ipynb`](./02_capas_y_activaciones.ipynb) | Capas con memoria, activaciones adaptativas, neuronas resonantes y polinómicas, memoria híbrida, redes desde cero con NumPy. | 32 |
 | [`03_neuronas_alternativas.ipynb`](./03_neuronas_alternativas.ipynb) | Neurona DC, neuronas flotantes, neuronas basadas en k-means, KNN, árbol de decisión, bayes y algoritmos genéticos. | 10 |
 | [`04_vision_e_imagenes.ipynb`](./04_vision_e_imagenes.ipynb) | Redes convolucionales auto-decorrelacionadas, reconstrucción con tripletas, GAN, video y un clasificador de imágenes. | 13 |
@@ -28,18 +28,12 @@ En Colab: **Archivo → Abrir cuaderno → GitHub** → `SiriusMagic/Notbook` �
 
 ### Texto y lenguaje — `01_texto_y_lenguaje.ipynb`
 
-- Extraer texto de PDF
-- Limpieza y tokenización de texto
 - Agente PPO para segmentar texto en español
 - Segmentador de sílabas
 - Tokenizador entrenado con RL
 - Difusión de texto
 - Clasificador BERT con corrección GNN
 - Agente de atención para clasificar texto
-- Preguntas y respuestas con BERT
-- ordenar.por.longitud
-- texto_por_silabas
-- DistilBertForQuestionAnswering
 - Textus Diffusio Restituo
 
 ### Capas y activaciones experimentales — `02_capas_y_activaciones.ipynb`
@@ -80,6 +74,7 @@ En Colab: **Archivo → Abrir cuaderno → GitHub** → `SiriusMagic/Notbook` �
 - Neurona DC: propagación hacia adelante
 - Neurona DC: notas
 - Neuronas flotantes cargadas desde archivos
+- Neuronas flotantes como grafo (traído del 01)
 - neuros en un arreglo k means
 - arreglo knn
 - arreglo árbol de decisiones
@@ -166,6 +161,10 @@ En Colab: **Archivo → Abrir cuaderno → GitHub** → `SiriusMagic/Notbook` �
 - 1. Aprendizaje de Representaciones con Conciencia (Conscious Representation Lear
 - 1. Regresión Lineal (Linear Regression)
 - diálogo entre expertos, con diversidad de personalidades o enfoques, y un router
+
+## Limpieza (octubre 2026)
+
+Del cuaderno 01 se borraron, a pedido del dueño: la extracción de texto de PDF, la limpieza con pyphen, los scripts para ordenar palabras y guardar sílabas, y el tutorial de preguntas y respuestas con BERT/DistilBERT (era un uso de un modelo ya hecho, no un experimento propio). Las neuronas flotantes pasaron al 03 y la nota sobre cadena de pensamiento al 09. Todo sigue en el historial de Git.
 
 ## Origen
 

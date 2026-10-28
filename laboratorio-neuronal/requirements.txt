@@ -40,8 +40,6 @@ imageio[ffmpeg]>=2.35
 opensimplex>=0.4.5
 
 # Texto
-pypdf>=6.21.2               # reemplaza a PyPDF2 (abandonado)
-pyphen>=0.16
 Levenshtein>=0.26
 llama-cpp-python>=0.3.0  # versiones < 0.2.72 tenían una vulnerabilidad en plantillas
 
