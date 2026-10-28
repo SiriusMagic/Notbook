@@ -23,6 +23,7 @@ En Colab: **Archivo → Abrir cuaderno → GitHub** → `SiriusMagic/Notbook` �
 | [`09_notas_e_ideas.ipynb`](./09_notas_e_ideas.ipynb) | Explicaciones y lluvias de ideas guardadas como texto (modelos autorregresivos, propuestas de arquitecturas). | 10 |
 | [`11_texto_contra_industria.ipynb`](./11_texto_contra_industria.ipynb) | Las ideas del cuaderno 01 contra la industria: sílabas vs BPE/GPT-4o, posición jerárquica, segmentador de sílabas y agentes de atención vs TextCNN/Transformer/fastText. | 5 |
 | [`10_banco_de_evaluacion.ipynb`](./10_banco_de_evaluacion.ipynb) | Competencia en Colab (GPU): tus piezas del 02 y 04 contra CNN, TextCNN, Transformer, CNN 1D y LSTM, con datos reales de Hugging Face (`laboratorio/banco/`). | 7 |
+| [`12_como_funciona_cada_pieza.ipynb`](./12_como_funciona_cada_pieza.ipynb) | Guía: cómo funciona cada neurona, capa y arquitectura de los cuadernos 01-08, qué resultado dio contra la industria y por qué el tamaño (los parámetros) cambia el resultado. Corre en CPU. | 13 |
 
 ## Índice por cuaderno
 
