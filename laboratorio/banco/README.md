@@ -275,7 +275,7 @@ Arreglos (anotados en el código):
 Informes completos: [`resultados-03.md`](resultados-03.md) y [`resultados-03-clasicos.md`](resultados-03-clasicos.md).
 
 - **Redes genéticas tal cual: se derrumban** (50 % en círculos y lunas, que es el azar). Es un fallo de diseño: en una red ReLU toda neurona viva recibe ajuste en cada paso, así que las «menos ajustadas» son las **muertas**. El algoritmo reemplaza las neuronas vivas por copias de muertas.
-- **Arreglada**: va destruyendo la red poco a poco (dígitos 87 % contra 97 %). El problema de fondo es el criterio: con descenso por gradiente, la neurona que más se ajusta es la que **más importa** para el error, no una «enferma».
+- **Arreglada**: va destruyendo la red poco a poco: pierde en 5 de 6 tareas (círculos 72 % contra 85 %) y en dígitos empata con mucha variación (93 % ± 4 contra 97 %). El problema de fondo es el criterio: con descenso por gradiente, la neurona que más se ajusta es la que **más importa** para el error, no una «enferma».
 - **Invertida**: empata con la red estándar en las 6 tareas. Reciclar las neuronas que no se usan no daña; en redes más grandes, con muchas neuronas muertas, podría ayudar (por probar con datos reales).
 - **Neuronas KNN**: pierden en todo. Solo aprende la capa de salida (33 a 330 parámetros contra más de 1 000).
 - **Clasificadores clásicos**: Gradient Boosting gana en XOR y SVM gana en círculos y lunas. En la serie de seno, **una regresión lineal (Ridge) le gana a la red**: esa tarea es casi lineal. Por eso las «victorias» de IDA, seno y tanh en la serie de seno valen poco: igualan a un modelo lineal.
