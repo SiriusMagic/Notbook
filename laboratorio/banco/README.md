@@ -249,6 +249,43 @@ Informe completo: [`resultados-02-parte3.md`](resultados-02-parte3.md). Son 4 pi
 - **Ruteo adaptativo** empata en todo.
 - **CNN con entrada densa** contra la CNN normal (dígitos 8×8, 5 semillas): 97,7 % contra 98,4 %, empate (p = 0,11), con 50 % más parámetros. Falta probarla en MNIST y CIFAR-10 con GPU (`--competencia --tipo imagen`).
 
+## Cuaderno 03: neuronas alternativas
+
+```bash
+python -m laboratorio.banco --todo --pieza knn_prototipos --pieza genetica --pieza genetica_arreglada --pieza genetica_invertida
+python -m laboratorio.banco --clasicos      # clasificadores clásicos contra la red (clasicos.md)
+```
+
+En `piezas_03.py` y `clasicos.py`.
+
+| Pieza | Qué es |
+|---|---|
+| `knn_prototipos` | neuronas KNN: cada una guarda 5 patrones que aprende sin etiquetas (estilo Kohonen) y se activa según la distancia a los 3 más cercanos |
+| `genetica` | redes genéticas tal cual: las neuronas con ≥ 10 ajustes se reemplazan por mutaciones de las 2 menos ajustadas |
+| `genetica_arreglada` | mide cuánto se ajusta cada neurona, solo copia neuronas vivas y cambia ≤ 10 % por vez |
+| `genetica_invertida` | el criterio al revés: recicla las neuronas que no se usan copiando las más útiles (como ReDo, 2023) |
+| `--clasicos` | regresión logística, KNN, SVM, árbol, Naive Bayes, **Random Forest** y **Gradient Boosting** (lo que se usa hoy en datos en tabla) |
+
+Arreglos (anotados en el código):
+- **KNN**: 1/(1 + distancia) no tiene escala. Con 64 entradas todas las neuronas daban ≈ 0,1 para cualquier entrada y los patrones nunca se movían; en dígitos acertaba 7 %, menos que el azar. Ahora la distancia se mide en unidades de la distancia típica de cada neurona, como el ancho de una red RBF.
+- **Neuronas con árbol de decisión y con Naive Bayes**: no se meten en una red porque necesitan una «etiqueta local» por neurona oculta que el cuaderno no define. Se miden como clasificadores completos con `--clasicos`.
+
+### Resultados
+
+Informes completos: [`resultados-03.md`](resultados-03.md) y [`resultados-03-clasicos.md`](resultados-03-clasicos.md).
+
+- **Redes genéticas tal cual: se derrumban** (50 % en círculos y lunas, que es el azar). Es un fallo de diseño: en una red ReLU toda neurona viva recibe ajuste en cada paso, así que las «menos ajustadas» son las **muertas**. El algoritmo reemplaza las neuronas vivas por copias de muertas.
+- **Arreglada**: va destruyendo la red poco a poco: pierde en 5 de 6 tareas (círculos 72 % contra 85 %) y en dígitos empata con mucha variación (93 % ± 4 contra 97 %). El problema de fondo es el criterio: con descenso por gradiente, la neurona que más se ajusta es la que **más importa** para el error, no una «enferma».
+- **Invertida**: empata con la red estándar en las 6 tareas. Reciclar las neuronas que no se usan no daña; en redes más grandes, con muchas neuronas muertas, podría ayudar (por probar con datos reales).
+- **Neuronas KNN**: pierden en todo. Solo aprende la capa de salida (33 a 330 parámetros contra más de 1 000).
+- **Clasificadores clásicos**: Gradient Boosting gana en XOR y SVM gana en círculos y lunas. En la serie de seno, **una regresión lineal (Ridge) le gana a la red**: esa tarea es casi lineal. Por eso las «victorias» de IDA, seno y tanh en la serie de seno valen poco: igualan a un modelo lineal.
+
+Limpieza del cuaderno 03 (de 86 a 28 celdas):
+- Se borró la «neurona DC»: 15 versiones de una red sigmoide normal escrita con *dataclasses*, con técnicas estándar (bajar el aprendizaje por tramos o si se estanca).
+- Se borraron los ejemplos de cómo cargar modelos de lenguaje (DeepSeek Coder, CodeGemma en GGUF), que no son investigación.
+- Se borró el corrector GNN repetido del cuaderno 01 (ya está en el banco).
+- Se borraron versiones viejas de las neuronas flotantes, del árbol fonológico y de las redes genéticas, y celdas sueltas.
+
 **Agregar una idea nueva**: escribe la capa como `nn.Module(entradas, salidas)` y añádela a `PIEZAS` en `piezas.py` (o en `piezas_02.py`). Si tiene una regla que se aplica después de cada paso (como las mutaciones de SMA o las memorias), ponle un método `despues_del_paso(perdida, error, epoca)`. Si la idea es la forma de conectar las capas, usa `red=lambda entradas, salidas, ocultas: TuRed(...)`.
 
 ## Primeros resultados

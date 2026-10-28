@@ -38,8 +38,6 @@ opensimplex>=0.4.5
 
 # Texto
 Levenshtein>=0.26
-llama-cpp-python>=0.3.0  # versiones < 0.2.72 tenían una vulnerabilidad en plantillas
 
 # Interfaces y red
 gradio>=5.31
-requests>=2.34.2
