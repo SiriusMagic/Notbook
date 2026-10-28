@@ -36,6 +36,30 @@ Genera `resultados/informe.md` (una tabla) y `resultados/AAAA-MM-DD.jsonl` (cada
 | `serie_seno` | predecir el siguiente valor de una onda con ruido | MSE |
 | `digitos` | dígitos 8×8 de scikit-learn (un MNIST pequeño, sin descargas) | exactitud |
 
+## Competencia contra la tecnología normal
+
+```bash
+python -m laboratorio.banco --competencia --rapido                     # una tarea por tipo (≈ 15–30 min con GPU)
+python -m laboratorio.banco --competencia --tipo imagen --guardar modelos
+python -m laboratorio.banco --competencia --tipo texto --pieza ida --pieza seno
+```
+
+Cada pieza compite contra la arquitectura que se usa hoy para cada tipo de dato:
+
+| Datos | Arquitecturas | Cómo entra tu pieza |
+|---|---|---|
+| imagen | `densa`, **`cnn`** (2 bloques conv + BatchNorm) | en la parte final; si es activación (PReLU, IDA, adaptativa, seno), también en lugar de ReLU dentro de la CNN |
+| texto | `densa` (TF-IDF), **`texto_cnn`** (TextCNN), **`transformer`** (2 capas, 4 cabezas) | en la parte final; en TextCNN también como activación |
+| serie | `densa`, **`serie_cnn`** (CNN 1D), **`lstm`** | en la parte final; en la CNN 1D también como activación |
+
+El informe `competencia.md` tiene una **tabla de posiciones** por tarea. Para cada modelo muestra:
+- cuánto mejor o peor sale frente a la mejor arquitectura normal;
+- si la pieza **mejora la arquitectura donde va**, es decir, la misma arquitectura con ReLU. Usa prueba t pareada y corrección de Benjamini-Hochberg.
+
+En las series se muestra también la **predicción ingenua** (repetir el último valor). Un modelo que no la supera no sirve para esa serie.
+
+Con `--arquitectura cnn` (sin `--competencia`) se corre el banco normal dentro de una sola arquitectura. La GPU se usa sola si hay (`--dispositivo cpu` para evitarlo).
+
 ## Tareas con datos reales (Hugging Face)
 
 | Tarea | Datos | Tipo |
@@ -46,6 +70,9 @@ Genera `resultados/informe.md` (una tabla) y `resultados/AAAA-MM-DD.jsonl` (cada
 | `resenas_es` | [SetFit/amazon_reviews_multi_es](https://huggingface.co/datasets/SetFit/amazon_reviews_multi_es): reseñas en español | texto, 1–5 estrellas |
 | `ag_news` | [fancyzhx/ag_news](https://huggingface.co/datasets/fancyzhx/ag_news): noticias en inglés | texto, 4 temas |
 | `imdb` | [stanfordnlp/imdb](https://huggingface.co/datasets/stanfordnlp/imdb): críticas de cine | texto, positiva/negativa |
+| `electricidad` | [autogluon/chronos_datasets](https://huggingface.co/datasets/autogluon/chronos_datasets) `ercot`: demanda eléctrica por hora en Texas | serie, ventanas de 48 h |
+| `tipo_cambio` | chronos_datasets `exchange_rate`: tipo de cambio diario | serie, 30 días (casi azar: muy difícil) |
+| `rio` | chronos_datasets `monash_saugeenday`: caudal diario de un río | serie, 30 días |
 
 ```bash
 python -m laboratorio.banco --pieza ida --tarea mnist --tarea resenas_es --guardar modelos
@@ -54,7 +81,11 @@ python -m laboratorio.banco --reales --guardar modelos      # todas (más de una
 
 - **Descarga y caché**: la primera vez se descargan de Hugging Face (entre 15 y 120 MB cada una). Los archivos originales quedan en `HF_HOME` y los datos ya preparados en `LABORATORIO_CACHE` (por defecto `~/.cache/laboratorio`); la segunda vez cargan en segundos. En Colab, el cuaderno 10 los guarda en Google Drive.
 - **Muestra al azar**: se toman 10 000 ejemplos para entrenar y 2 000 de prueba, barajados antes de cortar (IMDB viene ordenado por clase; sin barajar saldría una sola clase).
-- **Cómo se convierten**: las imágenes se aplanan (píxeles normalizados) y el texto pasa a un vector de 2048 números (TF-IDF). Así entran en la misma red densa de todas las piezas. Es justo para comparar piezas, no el mejor modelo posible para cada dato.
+- **Cómo se convierten**:
+  - **Imágenes**: píxeles normalizados. La red densa las ve aplanadas; la CNN, con su forma.
+  - **Texto**: para la red densa es un vector TF-IDF de 2048 números. Para TextCNN y Transformer son las palabras numeradas: las 20 000 más frecuentes del entrenamiento y los primeros 256 tokens.
+  - **Series**: ventanas de valores pasados → predecir el siguiente. Se dividen en orden de tiempo y se normalizan solo con la parte de entrenamiento.
+- `--entreno N` / `--prueba N` cambian cuántos ejemplos se usan (`--rapido` usa 3 000 / 1 000).
 - **Por lotes** (128) y con **tasa de aprendizaje 0,001**, que es lo normal en conjuntos grandes.
 
 ## Parada temprana y modelos guardados
@@ -106,4 +137,4 @@ Las piezas que necesitan su propio ciclo de entrenamiento quedan para después, 
 - algoritmos genéticos del cuaderno 03;
 - neurona DC.
 
-También falta probar con redes convolucionales para imágenes y con incrustaciones para texto: hoy todas las piezas van en una red densa.
+Los modelos de difusión (que generan imágenes) quedan fuera por ahora: no clasifican, así que necesitarían otra métrica y mucha más GPU.
