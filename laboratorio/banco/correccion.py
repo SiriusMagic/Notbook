@@ -32,6 +32,7 @@ import random
 import re
 import time
 from collections import Counter
+from difflib import SequenceMatcher
 from statistics import mean, stdev
 
 import torch
@@ -115,7 +116,8 @@ def medir(predichas: list[str], pares: list[tuple[str, str]]) -> dict:
     for p, l in zip(predichas, limpias):
         wp, wl = p.split(), l.split()
         palabras_total += len(wl)
-        palabras_ok += sum(a == b for a, b in zip(wp, wl)) if len(wp) == len(wl) else 0
+        # Se alinean las palabras: si un error juntó o separó dos, el resto de la frase sigue contando.
+        palabras_ok += sum(b.size for b in SequenceMatcher(None, wp, wl, autojunk=False).get_matching_blocks())
     return {"cer": mean(errores), "palabras_ok": palabras_ok / max(palabras_total, 1),
             "perfectas": mean(p == l for p, l in zip(predichas, limpias))}
 

@@ -47,6 +47,9 @@ def test_metricas():
     assert m["cer"] == 0 and m["perfectas"] == 1 and m["palabras_ok"] == 1
     m = medir(["la caza", "el perro"], pares)
     assert m["cer"] == pytest.approx((1 / 7 + 0) / 2) and m["palabras_ok"] == pytest.approx(3 / 4)
+    # Dos palabras pegadas no anulan el resto de la frase.
+    m = medir(["elperro come mucho"], [("", "el perro come mucho")])
+    assert m["palabras_ok"] == pytest.approx(2 / 4)
 
 
 def test_diccionario_corrige():
