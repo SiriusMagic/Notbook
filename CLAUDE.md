@@ -14,6 +14,7 @@ python -m laboratorio.banco --reales --guardar modelos     # con MNIST, CIFAR-10
 python -m laboratorio.banco --competencia --rapido          # piezas contra CNN, TextCNN, Transformer, CNN 1D y LSTM (mejor con GPU)
 python -m laboratorio.banco --tokenizadores                 # cuaderno 01: sílabas contra BPE, Unigram y GPT-4o
 python -m laboratorio.banco --segmentadores                 # cuaderno 01: segmentadores de sílabas
+python -m laboratorio.banco --correccion                    # cuaderno 01: corrección ortográfica (tu GNN)
 ```
 
 ## Reglas del dueño (aplican a todo cambio)

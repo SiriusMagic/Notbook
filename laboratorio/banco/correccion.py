@@ -18,7 +18,8 @@ Compiten, con frases reales de las reseñas y los errores de tu propia función
 | ``sin_corregir`` | deja el texto como está (el piso) |
 | ``diccionario`` | corrector clásico (Norvig, SymSpell): cambia cada palabra desconocida por la más frecuente a 1–2 ediciones |
 | ``gnn_rl`` | tu GNN con auto-atención, entrenada con refuerzo como en el cuaderno (recompensa = parecido Levenshtein, sin BERT) |
-| ``gnn`` | tu misma GNN entrenada de forma supervisada (el arreglo) |
+| ``gnn`` | tu misma GNN entrenada de forma supervisada |
+| ``gnn_residual`` | tu GNN con conexiones residuales (el arreglo: sin ellas la red olvida la letra original) |
 | ``bilstm`` / ``transformer`` | etiquetadores de caracteres de la industria (misma tarea, letra por letra) |
 
 Métricas: **CER** (% de letras mal tras corregir; menos es mejor), **palabras
@@ -204,6 +205,31 @@ class CorreccionGNN(nn.Module):
         return self.decoder(x)
 
 
+class CorreccionGNNResidual(nn.Module):
+    """Tu misma red con conexiones residuales (el cuaderno las dejó comentadas como «opcional»).
+
+    Sin ellas, la salida de la atención reemplaza a la letra original y las 3 GCN promedian tanto a los vecinos
+    que la red olvida qué letra había: corrige peor que no corregir. Con ellas, cada capa *suma* su arreglo.
+    """
+
+    def __init__(self, emb: int = 16, oculto: int = 32, capas: int = 3, cabezas: int = 4) -> None:
+        super().__init__()
+        self.emb = nn.Embedding(len(LETRAS) + 1, emb, padding_idx=0)
+        self.atencion = nn.MultiheadAttention(emb, cabezas, batch_first=True)
+        self.proy = nn.Linear(emb, oculto)
+        self.convs = nn.ModuleList(GCNCadena(oculto, oculto) for _ in range(capas))
+        self.decoder = nn.Linear(oculto, len(LETRAS) + 1)
+
+    def forward(self, ids):
+        mascara = ids != 0
+        e = self.emb(ids)
+        a, _ = self.atencion(e, e, e, key_padding_mask=~mascara)
+        h = self.proy(e + a)
+        for conv in self.convs:
+            h = h + F.relu(conv(h, mascara))
+        return self.decoder(h)
+
+
 class EtiquetadorBiLSTM(nn.Module):
     def __init__(self, emb: int = 32, oculto: int = 64) -> None:
         super().__init__()
@@ -228,7 +254,8 @@ class EtiquetadorTransformer(nn.Module):
         return self.salida(self.enc(self.emb(ids) + self.pos[:, : ids.size(1)], src_key_padding_mask=ids == 0))
 
 
-REDES = {"gnn": CorreccionGNN, "gnn_rl": CorreccionGNN, "bilstm": EtiquetadorBiLSTM, "transformer": EtiquetadorTransformer}
+REDES = {"gnn": CorreccionGNN, "gnn_rl": CorreccionGNN, "gnn_residual": CorreccionGNNResidual,
+         "bilstm": EtiquetadorBiLSTM, "transformer": EtiquetadorTransformer}
 
 
 def _decodificar(logits: torch.Tensor, ids: torch.Tensor) -> list[str]:
@@ -319,7 +346,7 @@ def entrenar(nombre: str, pares: list[tuple[str, str]], semilla: int, epocas: in
 
 # ---------------------------------------------------------------- Competencia
 def competir_correctores(frases_e: list[str], frases_p: list[str], escenarios=("sustituciones", "todos"),
-                         redes=("gnn", "gnn_rl", "bilstm", "transformer"), semillas=(0, 1, 2), aviso=print,
+                         redes=("gnn", "gnn_rl", "gnn_residual", "bilstm", "transformer"), semillas=(0, 1, 2), aviso=print,
                          **entreno) -> dict:
     dicc = CorrectorDiccionario(frases_e)
     resultado = {"escenarios": {}, "frases_entreno": len(frases_e), "frases_prueba": len(frases_p),
@@ -358,7 +385,8 @@ def informe_correctores(r: dict) -> str:
         return f"{mean(v) * 100:.2f} %" + (f" ± {stdev(v) * 100:.2f}" if len(v) > 1 else "")
 
     nombres = {"sin_corregir": "Sin corregir (piso)", "diccionario": "Diccionario (Norvig/SymSpell)",
-               "gnn": "Tu GNN, supervisada (arreglo)", "gnn_rl": "Tu GNN, con refuerzo (como el cuaderno)",
+               "gnn": "Tu GNN tal cual, supervisada", "gnn_rl": "Tu GNN tal cual, con refuerzo (como el cuaderno)",
+               "gnn_residual": "Tu GNN con conexiones residuales (arreglo)",
                "bilstm": "BiLSTM de caracteres", "transformer": "Transformer de caracteres"}
     lineas = ["# Corrección ortográfica: tu GNN contra la industria", "",
               f"Frases reales de reseñas ({r['frases_entreno']:,} para entrenar, {r['frases_prueba']:,} de prueba) "

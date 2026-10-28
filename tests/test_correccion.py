@@ -60,7 +60,7 @@ def test_frases_de():
     assert frases_de(["¡Hola! Me encantó, de verdad. Sí"], minimo=5) == ["me encantó de verdad"]  # «hola» y «sí» son muy cortas
 
 
-@pytest.mark.parametrize("red", ["gnn", "gnn_rl", "bilstm", "transformer"])
+@pytest.mark.parametrize("red", ["gnn", "gnn_rl", "gnn_residual", "bilstm", "transformer"])
 def test_redes_entrenan_y_corrigen(red):
     pares = preparar(FRASES, "sustituciones")
     modelo, info = entrenar(red, pares, 0, epocas=3, lote=16, muestras_rl=2)
@@ -73,4 +73,4 @@ def test_competencia_e_informe():
     r = competir_correctores(FRASES[:40], FRASES[40:], escenarios=("sustituciones",), redes=("gnn",),
                              semillas=(0,), aviso=lambda *_: None, epocas=2, lote=16)
     texto = informe_correctores(r)
-    assert "Tu GNN, supervisada" in texto and "Diccionario" in texto and "Sin corregir" in texto
+    assert "Tu GNN tal cual, supervisada" in texto and "Diccionario" in texto and "Sin corregir" in texto
