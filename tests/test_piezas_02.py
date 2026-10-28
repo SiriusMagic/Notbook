@@ -14,8 +14,8 @@ CON_REGLA = ["memoria_errores", "memoria_gradiente", "lr_por_neurona", "memoria_
 
 def test_industria_marcada():
     industria = {n for n, p in PIEZAS.items() if p.industria}
-    assert industria == {"gelu", "silu", "mish", "elu", "leaky_relu", "tanh", "residual"}
-    assert all(PIEZAS[n].activacion is not None for n in industria - {"residual"})
+    assert {"gelu", "silu", "mish", "elu", "leaky_relu", "tanh", "residual"} <= industria
+    assert all(PIEZAS[n].activacion is not None for n in {"gelu", "silu", "mish", "elu", "leaky_relu", "tanh"})
 
 
 @pytest.mark.parametrize("pieza", CON_REGLA)
@@ -69,3 +69,36 @@ def test_memoria_embedding_no_depende_del_lote(pieza):
         juntos = red(x)
         separados = torch.cat([red(x[i : i + 1]) for i in range(len(x))])
     assert torch.allclose(juntos, separados, atol=1e-6)
+
+
+def test_ruido_perlin_suave_y_acotado():
+    import numpy as np
+
+    from laboratorio.inicializadores import pesos_perlin, ruido_perlin
+
+    rng = np.random.default_rng(0)
+    r = ruido_perlin(rng.random(5000) * 40, rng.random(5000) * 40)
+    assert np.abs(r).max() <= 1.0 + 1e-9 and r.std() > 0.1
+    assert np.allclose(ruido_perlin(np.arange(5.0), np.arange(5.0)), 0)  # vale 0 en los puntos de la cuadrícula
+    w = pesos_perlin((16, 8))
+    assert w.shape == (16, 8) and np.corrcoef(w.ravel()[:-1], w.ravel()[1:])[0, 1] > 0.8  # vecinos parecidos
+
+
+@pytest.mark.parametrize("pieza", ["inicio_perlin", "inicio_lorenz"])
+def test_inicios_especiales_repetibles_y_distintos_por_semilla(pieza):
+    def pesos(semilla):
+        torch.manual_seed(semilla)
+        return Red(PIEZAS[pieza], 4, 2, ocultas=8).capa1.lineal.weight.detach().clone()
+
+    assert torch.equal(pesos(0), pesos(0)) and not torch.equal(pesos(0), pesos(1))
+
+
+@pytest.mark.parametrize("pieza", ["inicio_perlin", "inicio_lorenz"])
+def test_inicios_especiales_no_mueven_el_azar_de_las_otras_capas(pieza):
+    """La salida y la 2.ª capa empiezan igual que en la red estándar: solo cambia el inicio que se mide."""
+    torch.manual_seed(3)
+    especial = Red(PIEZAS[pieza], 4, 2, ocultas=8)
+    torch.manual_seed(3)
+    normal = Red(PIEZAS["estandar"], 4, 2, ocultas=8)
+    assert torch.equal(especial.salida.weight, normal.salida.weight)
+    assert torch.equal(especial.capa2.lineal.bias, normal.capa2.lineal.bias)

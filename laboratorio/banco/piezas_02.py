@@ -201,6 +201,57 @@ class CapaMemoriaEmbedding(nn.Module):
             self.ptr = (self.ptr + 1) % len(self.memoria)
 
 
+# ---------------------------------------------------------------- Inicializador de pesos: Perlin y Lorenz
+class CapaInicioEspecial(nn.Module):
+    """Lineal + ReLU igual que la estándar; solo cambian los pesos iniciales (Perlin o Lorenz).
+
+    El punto de partida dentro del ruido o de la trayectoria se elige con el generador de PyTorch, así cada
+    semilla del banco da un inicio distinto (y repetible).
+    """
+
+    def __init__(self, entradas: int, salidas: int, tipo: str) -> None:
+        super().__init__()
+        import numpy as np
+
+        from ..inicializadores import pesos_perlin, puntos_lorenz
+
+        self.lineal = nn.Linear(entradas, salidas)
+        forma = (salidas, entradas)
+        if tipo == "perlin":
+            desfase = float(_sorteo(100_000))
+            pesos = pesos_perlin(forma, desfase=desfase, semilla=_sorteo(2**31))
+        else:
+            n = salidas * entradas
+            trayectoria = _trayectoria_lorenz(puntos_lorenz)
+            inicio = _sorteo(len(trayectoria) - n)
+            tramo = trayectoria[inicio : inicio + n]
+            tramo = (tramo - tramo.mean()) / (tramo.std() or 1.0)
+            pesos = (tramo * np.sqrt(2.0 / entradas)).reshape(forma)
+        with torch.no_grad():
+            self.lineal.weight.copy_(torch.from_numpy(pesos).float())
+
+    def forward(self, x):
+        return F.relu(self.lineal(x))
+
+
+_LORENZ = None
+
+
+def _sorteo(tope: int) -> int:
+    """Número al azar que depende de la semilla, sin mover el generador global: así las demás capas reciben
+    exactamente los mismos pesos iniciales que en la red estándar y solo cambia lo que se quiere medir."""
+    with torch.random.fork_rng(devices=[]):
+        return int(torch.randint(0, tope, ()).item())
+
+
+def _trayectoria_lorenz(puntos_lorenz):
+    """Una sola trayectoria (x, y, z aplanados, sin el transitorio inicial), calculada una vez."""
+    global _LORENZ
+    if _LORENZ is None:
+        _LORENZ = puntos_lorenz(201_000)[1000:].T.ravel()
+    return _LORENZ
+
+
 # ---------------------------------------------------------------- Celdas 32 y 34: topologías densas
 class RedDensoCruzada(nn.Module):
     """Celda 32: cada capa recibe la concatenación de todas las anteriores (como DenseNet)."""
@@ -248,6 +299,10 @@ def piezas_02():
               CapaMemoriaEmbedding),
         Pieza("memoria_atencion_embedding", "Igual, con atención Q/K/V sobre la memoria", "02 · celdas 23-25",
               lambda e, s: CapaMemoriaEmbedding(e, s, atencion=True)),
+        Pieza("inicio_perlin", "Pesos iniciales con ruido Perlin (escala He)", "02 · inicializador de pesos",
+              lambda e, s: CapaInicioEspecial(e, s, "perlin")),
+        Pieza("inicio_lorenz", "Pesos iniciales del atractor de Lorenz (escala He)", "02 · inicializador de pesos",
+              lambda e, s: CapaInicioEspecial(e, s, "lorenz")),
         Pieza("denso_cruzada", "Cada capa recibe todas las anteriores (topología completa)", "02 · celda 32", None,
               red=lambda e, s, o: RedDensoCruzada(e, s, o)),
         Pieza("densa_entrada", "Igual, y además cada capa recibe la entrada original", "02 · celda 34", None,
