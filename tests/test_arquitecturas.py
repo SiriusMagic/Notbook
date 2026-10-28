@@ -120,3 +120,20 @@ def test_competencia_e_informe():
 
 def test_todas_las_arquitecturas_registradas():
     assert set(ARQUITECTURAS) == {"densa", "cnn", "texto_cnn", "transformer", "serie_cnn", "lstm"}
+
+
+def test_mapa_por_tipo_de_dato():
+    from laboratorio.banco.competencia import Fila, _celda, resumen_por_tipo
+    from laboratorio.banco.evaluar import Comparacion
+
+    def fila(tarea, arq, veredicto):
+        c = Comparacion("ida", tarea, "exactitud", 0.9, 0.0, 0.8, 0.0, 0.1, 0.01, veredicto, 1, 1)
+        return Fila(tarea, arq, "ida", "exactitud", 0.9, 0.0, 1, 0.1, c)
+
+    filas = [fila("digitos", "cnn", "mejor"), fila("digitos", "densa", "igual"), fila("serie_seno", "lstm", "peor")]
+    mapa = resumen_por_tipo(filas)
+    assert mapa["ida"]["imagen"]["mejor"] == 1 and mapa["ida"]["serie"]["peor"] == 1
+    assert "prometedora" in _celda(mapa["ida"]["imagen"])
+    assert "no sirve aquí" in _celda(mapa["ida"]["serie"])
+    texto = informe_competencia(filas, "2")
+    assert "¿en qué tipo de dato sirve cada pieza?" in texto and "| ida |" in texto

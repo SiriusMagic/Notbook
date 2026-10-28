@@ -56,6 +56,8 @@ El informe `competencia.md` tiene una **tabla de posiciones** por tarea. Para ca
 - cuánto mejor o peor sale frente a la mejor arquitectura normal;
 - si la pieza **mejora la arquitectura donde va**, es decir, la misma arquitectura con ReLU. Usa prueba t pareada y corrección de Benjamini-Hochberg.
 
+Al final viene un **mapa por tipo de dato**: cada pieza contra imágenes, texto y series, con cuántas veces mejora (🟢), iguala (⚪) o empeora (🔴) su arquitectura y una etiqueta (**prometedora**, neutral o «no sirve aquí»). Así se ve de un vistazo si una pieza sirve para imágenes aunque no para texto.
+
 En las series se muestra también la **predicción ingenua** (repetir el último valor). Un modelo que no la supera no sirve para esa serie.
 
 Con `--arquitectura cnn` (sin `--competencia`) se corre el banco normal dentro de una sola arquitectura. La GPU se usa sola si hay (`--dispositivo cpu` para evitarlo).

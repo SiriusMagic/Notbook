@@ -17,6 +17,7 @@ prueba t pareada y la corrección por comparaciones múltiples del resto del ban
 from __future__ import annotations
 
 import math
+from collections import Counter
 from dataclasses import dataclass, replace
 from statistics import mean, stdev
 
@@ -92,6 +93,47 @@ def _fmt(metrica: str, media: float, std: float | None = None) -> str:
     return f"{media:.4f}" + (f" ± {std:.4f}" if std is not None else "")
 
 
+_TIPOS = {"imagen": "Imágenes", "texto": "Texto", "serie": "Series", "tabla": "Tablas"}
+
+
+def resumen_por_tipo(filas: list[Fila]) -> dict[str, dict[str, Counter]]:
+    """Para cada pieza y tipo de dato: cuántas veces mejora, iguala o empeora su arquitectura."""
+    mapa: dict[str, dict[str, Counter]] = {}
+    for f in filas:
+        if f.comparacion is None:
+            continue
+        tipo = cargar_tarea(f.tarea).dato
+        mapa.setdefault(f.pieza, {}).setdefault(tipo, Counter())[f.comparacion.veredicto] += 1
+    return mapa
+
+
+def _celda(c: Counter | None) -> str:
+    if not c:
+        return "—"
+    partes = [f"{_ICONO[v]} {c[v]}" for v in ("mejor", "igual", "peor", "falla") if c[v]]
+    if c["mejor"] and not (c["peor"] or c["falla"]):
+        etiqueta = "**prometedora**"
+    elif c["peor"] + c["falla"] > c["mejor"]:
+        etiqueta = "no sirve aquí"
+    else:
+        etiqueta = "neutral"
+    return " · ".join(partes) + f" → {etiqueta}"
+
+
+def _mapa_por_tipo(filas: list[Fila]) -> list[str]:
+    mapa = resumen_por_tipo(filas)
+    if not mapa:
+        return []
+    tipos = [t for t in _TIPOS if any(t in m for m in mapa.values())]
+    lineas = ["## Mapa: ¿en qué tipo de dato sirve cada pieza?", "",
+              "Cuenta, en todas las tareas y arquitecturas de cada tipo, cuántas veces la pieza mejora (🟢), "
+              "iguala (⚪) o empeora (🔴) la arquitectura donde va. Una pieza puede ser mala en texto y buena en imágenes.", "",
+              "| Pieza | " + " | ".join(_TIPOS[t] for t in tipos) + " |", "|---|" + "---|" * len(tipos)]
+    for pieza, por_tipo in mapa.items():
+        lineas.append(f"| {pieza} | " + " | ".join(_celda(por_tipo.get(t)) for t in tipos) + " |")
+    return lineas + [""]
+
+
 def informe_competencia(filas: list[Fila], semillas: str) -> str:
     lineas = [
         "# Competencia: tus piezas contra la tecnología normal",
@@ -111,13 +153,14 @@ def informe_competencia(filas: list[Fila], semillas: str) -> str:
         mayor = grupo[0].metrica == "exactitud"
         normales = [f for f in grupo if f.pieza == "estandar" and f.arquitectura != "densa"] or \
                    [f for f in grupo if f.pieza == "estandar"]
-        ref = max(normales, key=lambda f: f.media if mayor else -f.media)
+        ref = max(normales, key=lambda f: f.media if mayor else -f.media) if normales else None
         orden = sorted(grupo, key=lambda f: (math.isnan(f.media), -f.media if mayor else f.media))
-        lineas += [f"## {tarea}", "", f"{t.descripcion}. Referencia: **{_nombre(ref.pieza, ref.arquitectura)}**.", "",
+        nombre_ref = _nombre(ref.pieza, ref.arquitectura) if ref else "—"
+        lineas += [f"## {tarea}", "", f"{t.descripcion}. Referencia: **{nombre_ref}**.", "",
                    "| # | Modelo | Prueba | vs referencia | ¿Mejora su arquitectura? | Parámetros | Seg./corrida |",
                    "|---|---|---|---|---|---|---|"]
         for i, f in enumerate(orden, 1):
-            if math.isnan(f.media) or math.isnan(ref.media) or ref.media == 0:
+            if ref is None or math.isnan(f.media) or math.isnan(ref.media) or ref.media == 0:
                 vs = "—"
             else:
                 d = (f.media - ref.media) / abs(ref.media) * 100 * (1 if mayor else -1)
@@ -135,6 +178,7 @@ def informe_competencia(filas: list[Fila], semillas: str) -> str:
             lineas += ["", f"Predicción ingenua (repetir el último valor): **{t.ingenuo:.4f}**. "
                            f"La superan {gana} de {len(grupo)} modelos."]
         lineas.append("")
+    lineas += _mapa_por_tipo(filas)
     mejoras = [f for f in filas if f.comparacion is not None and f.comparacion.veredicto == "mejor"]
     lineas += ["## Resumen", ""]
     if mejoras:
@@ -146,4 +190,4 @@ def informe_competencia(filas: list[Fila], semillas: str) -> str:
     return "\n".join(lineas) + "\n"
 
 
-__all__ = ["Fila", "competir", "informe_competencia", "ARQUITECTURAS"]
+__all__ = ["Fila", "competir", "informe_competencia", "resumen_por_tipo", "ARQUITECTURAS"]
