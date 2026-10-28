@@ -26,6 +26,11 @@ class Tarea:
     epocas: int
     descripcion: str
     lote: int | None = None  # None = todo el conjunto en cada paso (tareas pequeñas)
+    dato: str = "tabla"  # "tabla", "imagen", "texto" o "serie": decide qué arquitecturas sirven
+    forma: tuple | None = None  # imagen: (canales, alto, ancho); texto con ids: (largo,)
+    vocabulario: int | None = None  # texto con ids: cuántas palabras distintas
+    representacion: str = "plano"  # "plano" (vector) o "ids" (palabras numeradas)
+    ingenuo: float | None = None  # series: error de repetir el último valor (la referencia más simple)
 
     @property
     def metrica(self) -> str:
@@ -48,7 +53,7 @@ def _normalizar(entreno: np.ndarray, prueba: np.ndarray):
     return (entreno - media) / std, (prueba - media) / std
 
 
-def _armar(nombre, tipo, x, y, epocas, descripcion, normalizar_y=False, cronologico=False):
+def _armar(nombre, tipo, x, y, epocas, descripcion, normalizar_y=False, cronologico=False, dato="tabla", forma=None):
     rng = np.random.default_rng(SEMILLA_DATOS)
     if cronologico:
         # Series de tiempo: prueba = el último 30 %. Al azar, las ventanas que se solapan
@@ -69,7 +74,7 @@ def _armar(nombre, tipo, x, y, epocas, descripcion, normalizar_y=False, cronolog
         salidas = int(y.max()) + 1
         conv = lambda a: torch.tensor(a, dtype=torch.long)  # noqa: E731
     return Tarea(nombre, tipo, torch.tensor(xe, dtype=torch.float32), conv(ye),
-                 torch.tensor(xp, dtype=torch.float32), conv(yp), x.shape[1], salidas, epocas, descripcion)
+                 torch.tensor(xp, dtype=torch.float32), conv(yp), x.shape[1], salidas, epocas, descripcion, dato=dato, forma=forma)
 
 
 def regresion_cubica() -> Tarea:
@@ -103,13 +108,14 @@ def serie_seno(ventana: int = 12) -> Tarea:
     x = np.stack([s[i : i + ventana] for i in range(len(s) - ventana)])
     y = s[ventana:]
     return _armar("serie_seno", "regresion", x, y, 300, f"predecir el siguiente valor de una onda con ruido ({ventana} pasos previos; prueba = el último 30 %)",
-                  normalizar_y=True, cronologico=True)
+                  normalizar_y=True, cronologico=True, dato="serie")
 
 
 def digitos() -> Tarea:
     from sklearn.datasets import load_digits
     d = load_digits()
-    return _armar("digitos", "clasificacion", d.data, d.target, 200, "dígitos escritos a mano 8×8 (versión pequeña de MNIST)")
+    return _armar("digitos", "clasificacion", d.data, d.target, 200, "dígitos escritos a mano 8×8 (versión pequeña de MNIST)",
+                  dato="imagen", forma=(1, 8, 8))
 
 
 TAREAS = {
@@ -121,15 +127,19 @@ TAREAS = {
     "digitos": digitos,
 }
 
-_cache: dict[str, Tarea] = {}
+_cache: dict[tuple[str, str], Tarea] = {}
 
 
-def cargar_tarea(nombre: str) -> Tarea:
-    """Tareas pequeñas (TAREAS) o reales de Hugging Face (datos_reales.FUENTES)."""
+def cargar_tarea(nombre: str, representacion: str = "plano") -> Tarea:
+    """Tareas pequeñas (TAREAS) o reales de Hugging Face (datos_reales.FUENTES).
+
+    ``representacion="ids"`` da el texto como palabras numeradas (para TextCNN y Transformer).
+    """
     from .datos_reales import FUENTES, cargar_real
 
     if nombre not in TAREAS and nombre not in FUENTES:
         raise KeyError(f"Tarea desconocida: {nombre}. Opciones: {', '.join([*TAREAS, *FUENTES])}")
-    if nombre not in _cache:
-        _cache[nombre] = TAREAS[nombre]() if nombre in TAREAS else cargar_real(nombre)
-    return _cache[nombre]
+    clave = (nombre, representacion if nombre in FUENTES and FUENTES[nombre].tipo == "texto" else "plano")
+    if clave not in _cache:
+        _cache[clave] = TAREAS[nombre]() if nombre in TAREAS else cargar_real(nombre, representacion=clave[1])
+    return _cache[clave]

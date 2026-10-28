@@ -236,6 +236,40 @@ class ActivacionSeno(nn.Module):
         return torch.sin(self.w0 * x)
 
 
+# ---------------------------------------------------------------- Activaciones para CNN, texto y series
+# Las piezas que son «una activación» también se pueden poner dentro de una CNN,
+# en lugar de ReLU. Sus parámetros van por canal (como PReLU en PyTorch).
+def _por_canal(p: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
+    """Da forma (1, C, 1, …) a un parámetro de C valores para que encaje con x (N, C, …) o (N, C)."""
+    return p.view(1, -1, *([1] * (x.dim() - 2)))
+
+
+class ActivacionIDA(nn.Module):
+    """La activación de IDANeuron (celda 39) sin su capa lineal, para usarla en cualquier red."""
+
+    def __init__(self, canales: int) -> None:
+        super().__init__()
+        self.slope_param = nn.Parameter(torch.ones(canales) * 0.1)
+        self.offset_param = nn.Parameter(torch.zeros(canales))
+        self.shape_param = nn.Parameter(torch.zeros(canales))
+
+    def forward(self, z):
+        return (F.relu(z - _por_canal(self.offset_param, z)) * torch.sigmoid(_por_canal(self.slope_param, z))
+                + torch.tanh(z) * torch.sigmoid(_por_canal(self.shape_param, z)))
+
+
+class ActivacionAdaptativa(nn.Module):
+    """La mezcla ReLU/sigmoide de AdaptiveActivationNeuron (celda 36), por canal."""
+
+    def __init__(self, canales: int) -> None:
+        super().__init__()
+        self.gate_weights = nn.Parameter(torch.randn(canales, 2) * 0.1)
+
+    def forward(self, z):
+        g = F.softmax(self.gate_weights, dim=-1)
+        return _por_canal(g[:, 0], z) * F.relu(z) + _por_canal(g[:, 1], z) * torch.sigmoid(z)
+
+
 # ---------------------------------------------------------------- Registro
 @dataclass(frozen=True)
 class Pieza:
@@ -243,20 +277,25 @@ class Pieza:
     descripcion: str
     origen: str
     capa: Callable[[int, int], nn.Module]  # (entradas, salidas) → capa oculta con activación
+    # Si la pieza es una activación: cómo crearla para C canales (se usa dentro de CNN, texto y series).
+    # Si es None, en esas arquitecturas la pieza solo va en la parte final (la «cabeza»).
+    activacion: Callable[[int], nn.Module] | None = None
 
 
 PIEZAS: dict[str, Pieza] = {p.nombre: p for p in [
-    Pieza("estandar", "Lineal + ReLU (referencia)", "RedEstandar", CapaEstandar),
+    Pieza("estandar", "Lineal + ReLU (referencia)", "RedEstandar", CapaEstandar, lambda c: nn.ReLU()),
     Pieza("prelu_adaptativa", "PReLU con pendiente aprendible por neurona", "02 · celda 27",
-          lambda e, s: CapaConActivacion(e, s, nn.PReLU(s))),
+          lambda e, s: CapaConActivacion(e, s, nn.PReLU(s)), lambda c: nn.PReLU(c)),
     Pieza("integracion_no_lineal", "Un mini-MLP reemplaza la suma ponderada", "02 · celda 29", CapaIntegracionNoLineal),
-    Pieza("activacion_adaptativa", "Mezcla aprendida de ReLU y sigmoide", "02 · celda 36", AdaptiveActivationNeuron),
-    Pieza("ida", "Activación con forma aprendible (IDA)", "02 · celda 39", IDANeuron),
+    Pieza("activacion_adaptativa", "Mezcla aprendida de ReLU y sigmoide", "02 · celda 36", AdaptiveActivationNeuron,
+          ActivacionAdaptativa),
+    Pieza("ida", "Activación con forma aprendible (IDA)", "02 · celda 39", IDANeuron, ActivacionIDA),
     Pieza("sma", "Activación que muta según el gradiente (SMA)", "02 · celda 40", SMANeuron),
     Pieza("umbral_dinamico", "Bias corregido por activación y error", "02 · celda 12", CapaUmbralDinamico),
     Pieza("rmb", "Sesgo con memoria residual (RMB)", "02 · celda 76", RMBLayer),
     Pieza("hmn", "Neuronas con memoria LSTM propia (HMN)", "02 · celda 80", HMNLayer),
-    Pieza("seno", "Activación seno", "04 · ajuste de imagen", lambda e, s: CapaConActivacion(e, s, ActivacionSeno())),
+    Pieza("seno", "Activación seno", "04 · ajuste de imagen", lambda e, s: CapaConActivacion(e, s, ActivacionSeno()),
+          lambda c: ActivacionSeno()),
 ]}
 
 

@@ -20,7 +20,8 @@ from statistics import mean, stdev
 import torch
 import torch.nn.functional as F
 
-from .piezas import PIEZAS, Red, contar_parametros
+from .arquitecturas import ARQUITECTURAS, crear_modelo
+from .piezas import PIEZAS, contar_parametros
 from .tareas import SEMILLA_DATOS, TAREAS, Tarea, cargar_tarea
 
 
@@ -35,6 +36,8 @@ class Config:
     min_mejora: float = 0.0  # cuánto tiene que mejorar la validación para contar como mejora
     validacion: float = 0.15  # parte del entrenamiento que se separa para decidir la parada
     guardar: str | None = None  # carpeta donde guardar el mejor modelo de cada corrida
+    arquitectura: str = "densa"  # densa, cnn, texto_cnn, transformer, serie_cnn o lstm (ver arquitecturas.py)
+    dispositivo: str = "auto"  # "auto" usa la GPU si hay (Colab), si no la CPU
 
 
 # Registro de evaluaciones «pieza/tarea» (como el registro de openai/evals).
@@ -65,6 +68,7 @@ class Corrida:
     segundos: float
     fallo: bool = False
     valor_entreno: float = math.nan  # misma métrica en los datos de entrenamiento (para ver memorización)
+    arquitectura: str = "densa"
     detalle: dict = field(default_factory=dict)
 
 
@@ -102,14 +106,26 @@ def _poner_estado_extra(modelo, extra: dict) -> None:
             m.current_activations = list(extra[n])
 
 
-def ruta_modelo(carpeta: str | Path, pieza: str, tarea: str, semilla: int) -> Path:
-    return Path(carpeta) / f"{pieza}__{tarea}__s{semilla}.pt"
+def ruta_modelo(carpeta: str | Path, pieza: str, tarea: str, semilla: int, arquitectura: str = "densa") -> Path:
+    sufijo = "" if arquitectura == "densa" else f"__{arquitectura}"
+    return Path(carpeta) / f"{pieza}__{tarea}{sufijo}__s{semilla}.pt"
 
 
-def cargar_modelo(ruta: str | Path) -> Red:
-    """Vuelve a crear una red guardada por el banco (solo pesos: weights_only=True)."""
-    d = torch.load(ruta, weights_only=True)
-    modelo = Red(PIEZAS[d["pieza"]], d["entradas"], d["salidas"], d["ocultas"])
+def _dispositivo(nombre: str) -> torch.device:
+    if nombre == "auto":
+        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return torch.device(nombre)
+
+
+def cargar_modelo(ruta: str | Path):
+    """Vuelve a crear una red guardada por el banco (solo pesos: weights_only=True). Queda en CPU."""
+    from types import SimpleNamespace
+
+    d = torch.load(ruta, weights_only=True, map_location="cpu")
+    forma = d.get("forma")
+    meta = SimpleNamespace(nombre=d["tarea"], entradas=d["entradas"], salidas=d["salidas"], dato=d.get("dato", "tabla"),
+                           forma=tuple(forma) if forma is not None else None, vocabulario=d.get("vocabulario"))
+    modelo = crear_modelo(PIEZAS[d["pieza"]], meta, d.get("arquitectura", "densa"), d["ocultas"])
     modelo.load_state_dict(d["pesos"])
     _poner_estado_extra(modelo, d["extra"])
     modelo.eval()
@@ -124,18 +140,21 @@ def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = 
       mejorar y vuelve a los pesos de la mejor época (parada temprana).
     - Con ``guardar`` escribe el mejor modelo en disco; se recupera con ``cargar_modelo``.
     """
-    t = cargar_tarea(tarea) if isinstance(tarea, str) else tarea
-    x_e, y_e = t.x_entreno, t.y_entreno
+    arq = ARQUITECTURAS[config.arquitectura]
+    t = cargar_tarea(tarea, arq.representacion) if isinstance(tarea, str) else tarea
+    disp = _dispositivo(config.dispositivo)
+    x_e, y_e = t.x_entreno.to(disp), t.y_entreno.to(disp)
+    x_prueba, y_prueba = t.x_prueba.to(disp), t.y_prueba.to(disp)
     x_v = y_v = None
     if config.paciencia:
         # La misma división de validación para todas las piezas (depende de los datos, no de la red).
-        orden = torch.randperm(len(x_e), generator=torch.Generator().manual_seed(SEMILLA_DATOS))
+        orden = torch.randperm(len(x_e), generator=torch.Generator().manual_seed(SEMILLA_DATOS)).to(disp)
         n_v = max(1, int(len(x_e) * config.validacion))
         x_v, y_v = x_e[orden[:n_v]], y_e[orden[:n_v]]
         x_e, y_e = x_e[orden[n_v:]], y_e[orden[n_v:]]
 
     torch.manual_seed(semilla)
-    modelo = Red(PIEZAS[pieza], t.entradas, t.salidas, config.ocultas)
+    modelo = crear_modelo(PIEZAS[pieza], t, config.arquitectura, config.ocultas).to(disp)
     opt = torch.optim.Adam(modelo.parameters(), lr=config.lr)
     epocas = config.epocas or t.epocas
     lote = config.lote or t.lote
@@ -149,7 +168,7 @@ def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = 
     epoca = -1
     for epoca in range(epocas):
         modelo.train()
-        indices = torch.randperm(len(x_e), generator=barajador) if lote else None
+        indices = torch.randperm(len(x_e), generator=barajador).to(disp) if lote else None
         partes = [indices[i : i + lote] for i in range(0, len(x_e), lote)] if lote else [None]
         for parte in partes:
             xb, yb = (x_e, y_e) if parte is None else (x_e[parte], y_e[parte])
@@ -183,21 +202,24 @@ def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = 
     with torch.no_grad():
         salida_e = _predecir(modelo, x_e)
         valor_entreno = _medir(t, salida_e, y_e) if not fallo and torch.isfinite(salida_e).all() else math.nan
-        salida = _predecir(modelo, t.x_prueba)
-        valor = _medir(t, salida, t.y_prueba) if not fallo and torch.isfinite(salida).all() else math.nan
+        salida = _predecir(modelo, x_prueba)
+        valor = _medir(t, salida, y_prueba) if not fallo and torch.isfinite(salida).all() else math.nan
     fallo = fallo or math.isnan(valor)
     detalle = {"mutaciones": sum(getattr(m, "mutaciones", 0) for m in modelo.modules() if m is not modelo)}
     if config.paciencia:
         detalle.update(epocas_entrenadas=epoca + 1, mejor_epoca=mejor_epoca + 1, validacion=round(signo * mejor, 6))
     if config.guardar and not fallo:
-        ruta = ruta_modelo(config.guardar, pieza, t.nombre, semilla)
+        ruta = ruta_modelo(config.guardar, pieza, t.nombre, semilla, config.arquitectura)
         ruta.parent.mkdir(parents=True, exist_ok=True)
         torch.save({"pieza": pieza, "tarea": t.nombre, "semilla": semilla, "entradas": t.entradas,
-                    "salidas": t.salidas, "ocultas": config.ocultas, "pesos": modelo.state_dict(),
+                    "salidas": t.salidas, "ocultas": config.ocultas, "arquitectura": config.arquitectura,
+                    "dato": t.dato, "forma": t.forma, "vocabulario": t.vocabulario,
+                    "pesos": {k: v.cpu() for k, v in modelo.state_dict().items()},
                     "extra": _estado_extra(modelo), "valor_prueba": valor}, ruta)
         detalle["modelo"] = str(ruta)
     return Corrida(pieza, t.nombre, semilla, t.metrica, valor, perdida, contar_parametros(modelo),
-                   round(time.perf_counter() - inicio, 3), fallo, valor_entreno, {k: v for k, v in detalle.items() if v})
+                   round(time.perf_counter() - inicio, 3), fallo, valor_entreno, config.arquitectura,
+                   {k: v for k, v in detalle.items() if v})
 
 
 class Registro:

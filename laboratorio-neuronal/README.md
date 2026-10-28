@@ -21,7 +21,7 @@ En Colab: **Archivo → Abrir cuaderno → GitHub** → `SiriusMagic/Notbook` �
 | [`07_grafos_y_generativos.ipynb`](./07_grafos_y_generativos.ipynb) | Redes de grafos (GCN), fusión condicional y generación multimodal (HCMG), inversión de gradiente. | 12 |
 | [`08_optimizacion_y_series.ipynb`](./08_optimizacion_y_series.ipynb) | Tasa de aprendizaje dinámica, optimización por error, detector de sobre-generalización, series sintéticas, clasificador caótico. | 6 |
 | [`09_notas_e_ideas.ipynb`](./09_notas_e_ideas.ipynb) | Explicaciones y lluvias de ideas guardadas como texto (modelos autorregresivos, propuestas de arquitecturas). | 10 |
-| [`10_banco_de_evaluacion.ipynb`](./10_banco_de_evaluacion.ipynb) | Corre en Colab el banco que compara las piezas del 02 y 04 contra una red estándar (`laboratorio/banco/`). | 5 |
+| [`10_banco_de_evaluacion.ipynb`](./10_banco_de_evaluacion.ipynb) | Competencia en Colab (GPU): tus piezas del 02 y 04 contra CNN, TextCNN, Transformer, CNN 1D y LSTM, con datos reales de Hugging Face (`laboratorio/banco/`). | 7 |
 
 ## Índice por cuaderno
 
