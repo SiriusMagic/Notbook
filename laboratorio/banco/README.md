@@ -35,6 +35,7 @@ Genera `resultados/informe.md` (una tabla) y `resultados/AAAA-MM-DD.jsonl` (cada
 | `xor` | XOR en los 4 cuadrantes | exactitud |
 | `serie_seno` | predecir el siguiente valor de una onda con ruido | MSE |
 | `digitos` | dígitos 8×8 de scikit-learn (un MNIST pequeño, sin descargas) | exactitud |
+| `caotica_20d` | 4 clases por reglas enredadas en 20 dimensiones, con ruido (cuaderno 08) | exactitud |
 
 ## Cuaderno 01: texto contra la industria
 
@@ -362,6 +363,38 @@ Limpieza del cuaderno 07 (de 51 a 23 celdas):
 - Se dejó un solo dibujo de grafos ramificados (había 5).
 - Se quitaron las demos de BERT repetidas del cuaderno 03, la neurona resonante repetida del 02, una neurona escalón básica, una celda toda comentada y la «red inversa» (una regresión lineal al revés, sin una idea nueva).
 - Se arregló una celda que empezaba con una palabra suelta («Un») y no corría.
+
+## Cuaderno 08: votación ponderada y tarea caótica 20D
+
+- **Tarea `caotica_20d`** (en `tareas.py`): 4 clases definidas por reglas enredadas sobre 20 números, con ruido agregado después de etiquetar, igual que en el cuaderno. Se usan 4 000 ejemplos en vez de 20 000 para que corra en CPU. Es la primera tarea del banco donde la red estándar **memoriza** mucho: acierta 99,9 % al entrenar y 70 % en la prueba.
+- **Votación ponderada** (en `--clasicos`): 5 clasificadores votan con sus probabilidades, cada uno pesado por su exactitud en validación cruzada. El SVM usa `CalibratedClassifierCV`, porque `SVC(probability=True)`, que usaba el cuaderno, queda obsoleto en scikit-learn 1.11 (también se actualizó la celda del cuaderno).
+
+### Resultados
+
+Informe completo: [`resultados-08.md`](resultados-08.md).
+
+**Todas las piezas en la tarea caótica** (5 semillas). Aquí sí ganan las piezas que frenan la memorización, y varias son tuyas:
+
+| Pieza | Prueba | Veredicto | De dónde |
+|---|---|---|---|
+| `dropout` | 77,4 % | 🟢 | industria |
+| `dendritica` | 76,1 % | 🟢 | tuya (02) |
+| `integracion_no_lineal` | 75,7 % | 🟢 (con 9 veces más parámetros) | tuya (02) |
+| `dmna` | 72,2 % | 🟢 | tuya (02): el ruido que depende de la pérdida |
+| `genetica_invertida` | 72,2 % | 🟢 | tuya, arreglada (03) |
+| red estándar | 70,0 % | — | — |
+| `tanh`, `seno`, capas con memoria, `polinomica`… | 64-67 % | 🔴 | — |
+
+- Las piezas con tanh (`tanh`, `memoria_*`, `synaptic_tagging`) y `seno` empeoran: memorizan todavía más.
+- **Ojo**: todas quedan muy lejos de **Gradient Boosting (94 %)**. Para datos en tabla con reglas así, la industria usa árboles por algo.
+- **Pista para invertir**: la neurona dendrítica y DMNA regularizan casi tan bien como Dropout. Vale la pena compararlas directamente con Dropout en datos reales en tabla.
+
+**Votación ponderada**: gana a la red en dígitos y en la tarea caótica (76 % contra 70 %), pero pierde en 3 de las tareas pequeñas. Siempre queda por debajo de Gradient Boosting.
+
+Limpieza del cuaderno 08 (de 15 a 7 celdas):
+- Se quitaron los generadores de series sintéticas, que ya están en `laboratorio/series.py`.
+- Se quitaron el planificador de tasa de aprendizaje (es `ReduceLROnPlateau`) y la «optimización adaptativa basada en error», que dependía de la neurona DC ya borrada del cuaderno 03.
+- El detector de generalizaciones («sistema inmune cognitivo») pasó al cuaderno 09, de notas e ideas: es una regla de texto, no una red.
 
 **Agregar una idea nueva**: escribe la capa como `nn.Module(entradas, salidas)` y añádela a `PIEZAS` en `piezas.py` (o en `piezas_02.py`). Si tiene una regla que se aplica después de cada paso (como las mutaciones de SMA o las memorias), ponle un método `despues_del_paso(perdida, error, epoca)`. Si la idea es la forma de conectar las capas, usa `red=lambda entradas, salidas, ocultas: TuRed(...)`.
 
