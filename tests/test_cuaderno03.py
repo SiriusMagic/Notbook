@@ -71,3 +71,15 @@ def test_corren_en_el_banco(pieza):
 def test_registradas():
     assert {"knn_prototipos", "genetica", "genetica_arreglada", "genetica_invertida"} <= set(PIEZAS)
     assert Red(PIEZAS["genetica"], 3, 2, 4)(torch.randn(5, 3)).shape == (5, 2)
+
+
+def test_genetica_borra_la_inercia_de_adam_de_las_neuronas_reemplazadas():
+    capa, x = _red_genetica("invertida")
+    opt = torch.optim.Adam(capa.parameters(), lr=0.01)
+    capa(x).sum().backward()
+    opt.step()
+    assert opt.state[capa.lineal.weight]["exp_avg"].abs().sum() > 0
+    capa.despues_del_paso(epoca=1, optimizador=opt)
+    assert capa.reemplazos == 1
+    assert opt.state[capa.lineal.weight]["exp_avg"][0].abs().sum() == 0  # la neurona 0 se reemplazó
+    assert opt.state[capa.lineal.weight]["exp_avg_sq"][0].abs().sum() == 0

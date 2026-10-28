@@ -124,7 +124,8 @@ class CapaGenetica(nn.Module):
         return h
 
     @torch.no_grad()
-    def despues_del_paso(self, epoca: int = 0, **_):
+    def despues_del_paso(self, epoca: int = 0, optimizador=None, **_):
+        self.optimizador = optimizador
         g, gb = self.lineal.weight.grad, self.lineal.bias.grad
         if g is None:
             return
@@ -161,7 +162,18 @@ class CapaGenetica(nn.Module):
             w[i] = w[p] + torch.randn_like(w[p]) * self.ruido
             b[i] = b[p] + torch.randn((), device=b.device) * self.ruido
             self.ajustes[i] = 0
+        self._olvidar_inercia(reemplazar)
         self.reemplazos += len(reemplazar)
+
+    def _olvidar_inercia(self, filas: list[int]) -> None:
+        """Una neurona nueva no hereda la «inercia» del optimizador (momentos de Adam) de la que reemplaza."""
+        opt = getattr(self, "optimizador", None)
+        if opt is None or not filas:
+            return
+        for p in (self.lineal.weight, self.lineal.bias):
+            for clave, valor in opt.state.get(p, {}).items():
+                if torch.is_tensor(valor) and valor.dim() > 0 and valor.shape[0] == p.shape[0]:
+                    valor[filas] = 0
 
 
 def piezas_03():

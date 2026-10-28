@@ -199,7 +199,8 @@ def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = 
             opt.step()
             perdida = loss.item()
             modelo.despues_del_paso(perdida=perdida, error=_error(t, salida.detach(), yb), epoca=epoca,
-                                    perdida_de=lambda: _perdida_en_evaluacion(t, modelo, xb, yb))  # p. ej. GMO
+                                    perdida_de=lambda: _perdida_en_evaluacion(t, modelo, xb, yb),  # p. ej. GMO
+                                    optimizador=opt)  # p. ej. para borrar la inercia de neuronas reemplazadas
         if fallo:
             break
         if config.paciencia:
