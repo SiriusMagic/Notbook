@@ -342,6 +342,7 @@ from .piezas_02c import piezas_02c  # noqa: E402
 from .piezas_03 import piezas_03  # noqa: E402
 from .piezas_04 import piezas_04  # noqa: E402
 from .piezas_05 import piezas_05  # noqa: E402
+from .piezas_07 import piezas_07  # noqa: E402
 
 PIEZAS.update({p.nombre: p for p in piezas_02()})
 PIEZAS.update({p.nombre: p for p in piezas_02b()})
@@ -349,6 +350,7 @@ PIEZAS.update({p.nombre: p for p in piezas_02c()})
 PIEZAS.update({p.nombre: p for p in piezas_03()})
 PIEZAS.update({p.nombre: p for p in piezas_04()})
 PIEZAS.update({p.nombre: p for p in piezas_05()})
+PIEZAS.update({p.nombre: p for p in piezas_07()})
 
 
 def contar_parametros(modelo: nn.Module) -> int:
