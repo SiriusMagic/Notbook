@@ -224,7 +224,8 @@ def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = 
         valor = _medir(t, salida, y_prueba) if not fallo and torch.isfinite(salida).all() else math.nan
     fallo = fallo or math.isnan(valor)
     detalle = {"mutaciones": sum(getattr(m, "mutaciones", 0) for m in modelo.modules() if m is not modelo),
-               "consolidados": sum(getattr(m, "consolidados", 0) for m in modelo.modules() if m is not modelo)}
+               "consolidados": sum(getattr(m, "consolidados", 0) for m in modelo.modules() if m is not modelo),
+               "reemplazos": sum(getattr(m, "reemplazos", 0) for m in modelo.modules() if m is not modelo)}
     if config.paciencia:
         detalle.update(epocas_entrenadas=epoca + 1, mejor_epoca=mejor_epoca + 1, validacion=round(signo * mejor, 6))
     if config.guardar and not fallo:

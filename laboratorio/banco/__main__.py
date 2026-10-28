@@ -43,6 +43,9 @@ def main(argv=None) -> None:
                     help="cuaderno 01: tus sílabas contra BPE, Unigram y GPT-4o (con --tarea de texto; por defecto resenas_es)")
     ap.add_argument("--segmentadores", action="store_true",
                     help="cuaderno 01: segmentadores de sílabas (reglas, cuaderno, pyphen, BiLSTM, Transformer)")
+    ap.add_argument("--clasicos", action="store_true",
+                    help="cuaderno 03: regresión logística, KNN, SVM, árbol, Naive Bayes, Random Forest y "
+                         "Gradient Boosting contra la red estándar (por defecto, las tareas pequeñas)")
     ap.add_argument("--correccion", action="store_true",
                     help="cuaderno 01: corrección ortográfica, tu GNN contra BiLSTM, Transformer y diccionario")
     ap.add_argument("--tipo", action="append", choices=["imagen", "texto", "serie"], help="con --competencia: qué datos (se puede repetir)")
@@ -99,6 +102,16 @@ def main(argv=None) -> None:
         r = competir_segmentadores(palabras_de(textos), semillas=tuple(range(a.semillas or 3)), dispositivo=a.dispositivo)
         ruta = Path(a.salida) / "segmentadores.md"
         ruta.write_text(informe_segmentadores(r), encoding="utf-8")
+        print(f"\nInforme: {ruta}")
+        return
+
+    if a.clasicos:
+        from .clasicos import competir_clasicos, informe_clasicos
+
+        semillas = tuple(range(a.semillas or 5))
+        r = competir_clasicos(a.tarea or list(TAREAS), semillas)
+        ruta = Path(a.salida) / "clasicos.md"
+        ruta.write_text(informe_clasicos(r, semillas), encoding="utf-8")
         print(f"\nInforme: {ruta}")
         return
 
