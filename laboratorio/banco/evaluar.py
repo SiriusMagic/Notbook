@@ -187,7 +187,8 @@ def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = 
             loss.backward()
             opt.step()
             perdida = loss.item()
-            modelo.despues_del_paso(perdida=perdida, error=_error(t, salida.detach(), yb), epoca=epoca)
+            modelo.despues_del_paso(perdida=perdida, error=_error(t, salida.detach(), yb), epoca=epoca,
+                                    perdida_de=lambda: _perdida(t, modelo(xb), yb))  # p. ej. para GMO
         if fallo:
             break
         if config.paciencia:

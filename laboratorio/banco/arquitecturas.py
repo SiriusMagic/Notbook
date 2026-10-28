@@ -44,9 +44,10 @@ class Modelo(nn.Module):
 
     def perdida_extra(self, salida, objetivo):
         """Pérdida adicional del extractor (p. ej. REINFORCE de los agentes de atención)."""
+        total = self.cabeza.perdida_extra(salida, objetivo)
         if hasattr(self.extractor, "perdida_extra"):
-            return self.extractor.perdida_extra(salida, objetivo)
-        return salida.new_zeros(())
+            total = total + self.extractor.perdida_extra(salida, objetivo)
+        return total
 
 
 class ExtractorCNN(nn.Module):
