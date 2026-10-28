@@ -7,7 +7,7 @@ Cuadernos de Google Colab de varios años, ordenados y documentados.
 | Carpeta | Qué es |
 |---|---|
 | [`laboratorio-neuronal/`](./laboratorio-neuronal) | Experimentos con redes neuronales en 9 cuadernos por tema: texto, capas y activaciones, neuronas alternativas, visión, atención, refuerzo, grafos, optimización y notas. |
-| [`laboratorio/`](./laboratorio) | Piezas útiles sacadas de los cuadernos como código `.py` con pruebas: sílabas del español, series de tiempo sintéticas, programador de tasa de aprendizaje, inicializador de Lorenz, voto ponderado y capa de inversión de gradiente. |
+| [`laboratorio/`](./laboratorio) | Piezas útiles sacadas de los cuadernos como código `.py` con pruebas, y un **banco de evaluación** (`laboratorio/banco/`) que compara tus neuronas y capas de investigación contra una red estándar: sílabas del español, series de tiempo sintéticas, programador de tasa de aprendizaje, inicializador de Lorenz, voto ponderado y capa de inversión de gradiente. |
 | [`vulkan/`](./vulkan) | Portal de acceso de la red Wi-Fi Vulkan (`index.html`). |
 
 ## Qué pasó con cada cuaderno original
