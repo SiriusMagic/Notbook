@@ -406,6 +406,15 @@ Limpieza del cuaderno 08 (de 15 a 7 celdas):
 
 **Agregar una idea nueva**: escribe la capa como `nn.Module(entradas, salidas)` y añádela a `PIEZAS` en `piezas.py` (o en `piezas_02.py`). Si tiene una regla que se aplica después de cada paso (como las mutaciones de SMA o las memorias), ponle un método `despues_del_paso(perdida, error, epoca)`. Si la idea es la forma de conectar las capas, usa `red=lambda entradas, salidas, ocultas: TuRed(...)`.
 
+## El tamaño cambia el resultado
+
+Barrido con la red estándar y con Dropout de 8 a 128 neuronas por capa (5 semillas). Detalle y gráfico en el cuaderno `laboratorio-neuronal/12_como_funciona_cada_pieza.ipynb`.
+
+- **Tarea caótica 20D**: la red de 8 neuronas (276 parámetros) acierta 75,6 %; la de 32 (la del banco), 70,0 %, porque memoriza (98 % al entrenar). Las piezas que «ganan» ahí (Dropout 77,4 %, dendrítica 76,1 %, DMNA, genética invertida) frenan esa memorización, pero una red estándar más chica logra casi lo mismo sin ninguna idea nueva.
+- **Círculos**: 8 neuronas bastan (85,7 %); con 128 baja a 82,0 %.
+- **Dígitos**: sí hacen falta neuronas (93,7 % con 8, ≈ 97 % con 16 a 64).
+- **Regla**: una pieza vale la pena solo si le gana a la red estándar **de su mejor tamaño**, no solo a la de 32 neuronas.
+
 ## Primeros resultados
 
 Informe completo: [`resultados-2026-10-28.md`](resultados-2026-10-28.md). De 54 comparaciones, ya corregidas por comparaciones múltiples: 🟢 2 mejor, ⚪ 42 igual, 🔴 10 peor.
