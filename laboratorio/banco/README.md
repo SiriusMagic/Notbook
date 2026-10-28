@@ -41,6 +41,7 @@ Genera `resultados/informe.md` (una tabla) y `resultados/AAAA-MM-DD.jsonl` (cada
 ```bash
 python -m laboratorio.banco --tokenizadores --tarea resenas_es   # tokenizadores.md
 python -m laboratorio.banco --segmentadores                      # segmentadores.md
+python -m laboratorio.banco --correccion                         # correccion.md
 python -m laboratorio.banco --competencia --tipo texto           # agentes de atención y piezas vs TextCNN, Transformer, fastText
 ```
 
@@ -50,6 +51,11 @@ python -m laboratorio.banco --competencia --tipo texto           # agentes de at
   - Con las sílabas también compite tu **posición jerárquica**, en sus dos versiones: por pares de sílabas (la del cuaderno) y por palabra + sílaba. Se compara contra la posición aprendida y la senoidal.
 - **Segmentadores** (`segmentadores.py`): reglas, heurística del cuaderno, pyphen, la BiLSTM de la celda 16 y un Transformer de caracteres.
   - Se miden con 128 palabras silabeadas a mano según la RAE (`silabas_referencia.py`).
+- **Corrección ortográfica** (`correccion.py`, celda 26): tu GNN, en tres versiones, contra BiLSTM y Transformer de caracteres y un corrector por diccionario (Norvig/SymSpell).
+  - Las tres versiones de tu GNN son: tal cual con refuerzo, tal cual supervisada, y con conexiones residuales.
+  - Usa frases reales con los errores de tu propia función, en dos escenarios: solo letras cambiadas, y todos los errores.
+  - Se quitó el «puntaje BERT» de la recompensa, porque su capa final nunca se entrenó.
+  - Hallazgo: sin conexiones residuales la red olvida la letra original y deja el texto peor que sin corregir. Con ellas mejora el texto con muy pocos parámetros.
 - **Agentes de atención** (`arquitecturas.py`):
   - tu atención binaria con RL (celda 31);
   - tu atención por niveles con RL (celdas 32 y 36);

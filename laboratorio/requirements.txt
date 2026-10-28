@@ -9,5 +9,6 @@ tokenizers>=0.21        # cuaderno 01: BPE (como GPT, Llama)
 sentencepiece>=0.2      # cuaderno 01: Unigram (como T5, Gemma)
 tiktoken>=0.9           # cuaderno 01: el tokenizador de GPT-4o
 pyphen>=0.17            # cuaderno 01: guionado de LibreOffice para comparar sílabas
+rapidfuzz>=3.10         # cuaderno 01: distancia de Levenshtein para la corrección ortográfica
 # PyTorch es opcional (capas_torch.py). En CI se instala la versión para CPU:
 #   pip install torch --index-url https://download.pytorch.org/whl/cpu

@@ -41,6 +41,8 @@ def main(argv=None) -> None:
                     help="cuaderno 01: tus sílabas contra BPE, Unigram y GPT-4o (con --tarea de texto; por defecto resenas_es)")
     ap.add_argument("--segmentadores", action="store_true",
                     help="cuaderno 01: segmentadores de sílabas (reglas, cuaderno, pyphen, BiLSTM, Transformer)")
+    ap.add_argument("--correccion", action="store_true",
+                    help="cuaderno 01: corrección ortográfica, tu GNN contra BiLSTM, Transformer y diccionario")
     ap.add_argument("--tipo", action="append", choices=["imagen", "texto", "serie"], help="con --competencia: qué datos (se puede repetir)")
     ap.add_argument("--rapido", action="store_true", help="con --competencia: una tarea por tipo, 2 semillas y menos datos")
     ap.add_argument("--arquitectura", default="densa", choices=list(ARQUITECTURAS), help="arquitectura (sin --competencia)")
@@ -93,6 +95,18 @@ def main(argv=None) -> None:
         r = competir_segmentadores(palabras_de(textos), semillas=tuple(range(a.semillas or 3)), dispositivo=a.dispositivo)
         ruta = Path(a.salida) / "segmentadores.md"
         ruta.write_text(informe_segmentadores(r), encoding="utf-8")
+        print(f"\nInforme: {ruta}")
+        return
+
+    if a.correccion:
+        from .correccion import competir_correctores, frases_de, informe_correctores
+        from .datos_reales import textos_reales
+
+        te, _, tp, _ = textos_reales("resenas_es")
+        r = competir_correctores(frases_de(te)[: a.entreno or 8000], frases_de(tp)[: a.prueba or 1000],
+                                 semillas=tuple(range(a.semillas or 3)), dispositivo=a.dispositivo)
+        ruta = Path(a.salida) / "correccion.md"
+        ruta.write_text(informe_correctores(r), encoding="utf-8")
         print(f"\nInforme: {ruta}")
         return
 

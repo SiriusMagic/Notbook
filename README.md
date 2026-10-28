@@ -33,7 +33,7 @@ Todo lo borrado sigue recuperable en el historial de Git.
 - **Revisión automática** (`.github/workflows/check.yml`): en cada cambio comprueba que los cuadernos tengan formato válido, que no tengan llaves de API ni resultados guardados, y avisa de errores de sintaxis. También corre las pruebas de `laboratorio/` (`pytest`).
 - **Dependabot** vigila `laboratorio-neuronal/requirements.txt` y `laboratorio/requirements.txt`: avisa de fallos de seguridad y propone actualizaciones una vez al mes, agrupadas.
 - `torch.load` usa `weights_only=True` (solo carga pesos, no código) y los archivos `joblib` llevan un aviso de cargar solo archivos propios.
-- PDF con **pypdf** (PyPDF2 está abandonado) y PyTorch Geometric desde PyPI, sin instalaciones desde URLs externas.
+- PyTorch Geometric se instala desde PyPI, sin instalaciones desde URLs externas.
 
 ## Abrir en Colab
 
