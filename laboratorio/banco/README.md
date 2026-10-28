@@ -7,7 +7,7 @@ Este banco las mide a todas igual:
 - **Mismas tareas**: las que ya usan los cuadernos, con datos fijos y una parte de **prueba** que la red nunca ve al entrenar.
 - **Misma red**: dos capas ocultas de 32 neuronas y una salida lineal. Solo cambia la pieza.
 - **Varias semillas** (5 por defecto). La pieza y la estándar usan las mismas semillas, así se comparan por pares.
-- **Veredicto honesto** con una prueba t pareada:
+- **Veredicto honesto** con una prueba t pareada (y, al comparar muchas a la vez, corregida con Benjamini-Hochberg para no contar ganadores por azar; con una sola semilla nunca se declara ganador):
   - 🟢 **mejor**: es mejor y la diferencia es real (p < 0,05).
   - ⚪ **igual**: la diferencia cabe dentro del ruido.
   - 🔴 **peor**: es peor, y la diferencia también es real.
@@ -76,13 +76,19 @@ Se copiaron casi tal cual. Lo que hubo que cambiar para que funcionaran dentro d
 
 ## Primeros resultados
 
-Informe completo: [`resultados-2026-10-28.md`](resultados-2026-10-28.md). En resumen, de 54 comparaciones: 🟢 6 mejor, ⚪ 35 igual, 🔴 13 peor.
+Informe completo: [`resultados-2026-10-28.md`](resultados-2026-10-28.md). De 54 comparaciones, ya corregidas por comparaciones múltiples: 🟢 2 mejor, ⚪ 42 igual, 🔴 10 peor.
 
-- **Series de tiempo suaves**: IDA, activación adaptativa, umbral dinámico, RMB, seno y PReLU son **mejores** que ReLU en `serie_seno` (entre 7 y 16 % menos error). Es la pista más prometedora.
-- **En clasificación** (círculos, lunas, dígitos), casi todas quedan **igual** que la red estándar: la mejora que se vio en los cuadernos no se sostiene con varias semillas y datos de prueba.
+- **Series de tiempo**: solo **IDA** y **seno** salen mejores que ReLU (≈ 7 % menos error). Es la pista que vale la pena confirmar con series reales.
+- **Clasificación** (círculos, lunas, XOR, dígitos): ninguna pieza gana. La mejora que se vio en los cuadernos no se sostiene con varias semillas y datos de prueba.
 - **HMN** sale **peor en todas las tareas**. En entrenamiento acierta mucho más que en prueba: su memoria se ata a la posición de cada fila, así que memoriza en vez de aprender.
-- **RMB** es **inestable**: en regresión cúbica y lunas algunas semillas se disparan (± muy alto).
+- **RMB** es **inestable**: en regresión cúbica algunas semillas se disparan.
 - **Integración no lineal** usa ~9 veces más parámetros y aun así no gana en ninguna tarea.
+
+Una primera versión del banco daba 6 victorias en series. Dos errores las inflaban, y una revisión automática (Codex) ayudó a encontrarlos:
+1. Las ventanas de la serie se repartían al azar, y así el futuro se filtraba al entrenamiento.
+2. Faltaba corregir por hacer 54 comparaciones a la vez.
+
+Ahora la serie se divide en orden de tiempo y los veredictos usan la corrección de Benjamini-Hochberg.
 
 ## Cómo leer el informe
 

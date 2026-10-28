@@ -241,6 +241,7 @@ class Comparacion:
     parametros_pieza: int
     parametros_base: int
     pieza_entreno: float = math.nan  # media en entrenamiento: si es mucho mejor que en prueba, memoriza
+    p_ajustado: float = math.nan  # p corregido por comparaciones múltiples (Benjamini-Hochberg)
 
 
 def _resumen(valores: list[float]) -> tuple[float, float]:
@@ -250,6 +251,31 @@ def _resumen(valores: list[float]) -> tuple[float, float]:
 def _media_entreno(pares) -> float:
     v = [p.valor_entreno for p, _ in pares if not math.isnan(p.valor_entreno)]
     return mean(v) if v else math.nan
+
+
+def _veredicto(p: float, diferencia: float, alfa: float) -> str:
+    if math.isnan(p) or p >= alfa or abs(diferencia) < 1e-12:
+        return "igual"
+    return "mejor" if diferencia > 0 else "peor"
+
+
+def ajustar_multiples(comparaciones: list[Comparacion], alfa: float = 0.05) -> list[Comparacion]:
+    """Corrige por hacer muchas comparaciones a la vez (Benjamini-Hochberg).
+
+    Con 54 comparaciones a p < 0,05, por puro azar saldrían ~3 «ganadores» falsos.
+    Este ajuste controla que, de los resultados declarados, como mucho un 5 % sean falsos.
+    """
+    validas = sorted((c for c in comparaciones if c.veredicto != "falla" and not math.isnan(c.p_valor)),
+                     key=lambda c: c.p_valor)
+    m = len(validas)
+    q_min = 1.0
+    for rango in range(m, 0, -1):  # de mayor a menor p
+        c = validas[rango - 1]
+        q_min = min(q_min, c.p_valor * m / rango)
+        c.p_ajustado = q_min
+        if q_min >= alfa:  # la corrección solo puede quitar veredictos, nunca crearlos
+            c.veredicto = "igual"
+    return comparaciones
 
 
 def comparar(corridas_pieza: list[Corrida], corridas_base: list[Corrida], alfa: float = 0.05) -> Comparacion:
@@ -279,10 +305,12 @@ def comparar(corridas_pieza: list[Corrida], corridas_base: list[Corrida], alfa: 
     diferencias = [signo * (a - b) for a, b in zip(tp, tb)]
     media_d = mean(diferencias)
     if len(pares) < 2 or all(abs(d - diferencias[0]) < 1e-12 for d in diferencias):
-        p = 0.0 if abs(media_d) > 1e-12 else 1.0  # sin variación: decide el signo
+        # Con una semilla, o sin ninguna variación entre semillas, no se puede estimar el ruido:
+        # no se declara ganador.
+        p = math.nan
     else:
         p = float(ttest_rel(tp, tb).pvalue)
-    veredicto = "igual" if p >= alfa or abs(media_d) < 1e-12 else ("mejor" if media_d > 0 else "peor")
+    veredicto = _veredicto(p, media_d, alfa)
     return Comparacion(ref.pieza, ref.tarea, ref.metrica, pm, ps, bm, bs, dif, p, veredicto,
                        ref.parametros, pares[0][1].parametros, _media_entreno(pares))
 
@@ -296,13 +324,17 @@ def _fmt(metrica: str, media: float, std: float) -> str:
     return f"{media * 100:.1f} ± {std * 100:.1f} %" if metrica == "exactitud" else f"{media:.4f} ± {std:.4f}"
 
 
-def informe(comparaciones: list[Comparacion], semillas: int) -> str:
+def informe(comparaciones: list[Comparacion], semillas) -> str:
     """Tabla en Markdown para leer en el celular."""
+    ajustado = any(not math.isnan(c.p_ajustado) for c in comparaciones)
+    criterio = ("prueba t pareada corregida por comparaciones múltiples (Benjamini-Hochberg, 5 %)"
+                if ajustado else "prueba t pareada (p < 0,05)")
     lineas = [
         "# Informe del banco de evaluación",
         "",
         f"Cada celda: media ± desviación en **datos de prueba**, con {semillas} semillas. "
-        "Exactitud: más es mejor. MSE: menos es mejor. Veredicto con prueba t pareada (p < 0,05).",
+        f"Exactitud: más es mejor. MSE: menos es mejor. Veredicto con {criterio}. "
+        "Es una exploración: un 🟢 indica una pista que vale la pena confirmar, no una prueba definitiva.",
         "",
         "| Pieza | Tarea | Pieza (prueba) | Estándar (prueba) | Veredicto | Pieza en entreno | Parámetros (pieza / estándar) |",
         "|---|---|---|---|---|---|---|",

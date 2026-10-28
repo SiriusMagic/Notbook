@@ -11,7 +11,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from .datos_reales import FUENTES
-from .evaluar import EVALUACIONES, Config, Registro, comparar, correr, informe
+from .evaluar import EVALUACIONES, Config, Registro, ajustar_multiples, comparar, correr, informe
 from .piezas import PIEZAS
 from .tareas import TAREAS
 
@@ -58,6 +58,11 @@ def main(argv=None) -> None:
             comparaciones.append(c)
             print(f"{tarea:17} {pieza:22} {c.veredicto:6} pieza={c.pieza_media:.4f} base={c.base_media:.4f} p={c.p_valor:.3f}", flush=True)
 
+    if len(comparaciones) > 1:
+        ajustar_multiples(comparaciones)
+        cambiaron = [c for c in comparaciones if c.p_valor < 0.05 and c.veredicto == "igual"]
+        if cambiaron:
+            print(f"Tras corregir por {len(comparaciones)} comparaciones, {len(cambiaron)} diferencias dejan de ser significativas.")
     texto = informe(comparaciones, "/".join(str(n) for n in sorted(semillas_usadas)))
     ruta = Path(a.salida) / "informe.md"
     ruta.parent.mkdir(parents=True, exist_ok=True)

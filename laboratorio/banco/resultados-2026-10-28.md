@@ -1,6 +1,6 @@
 # Resultados del banco — 28 de octubre de 2026 (5 semillas, CPU)
 
-Cada celda: media ± desviación en **datos de prueba**, con 5 semillas. Exactitud: más es mejor. MSE: menos es mejor. Veredicto con prueba t pareada (p < 0,05).
+Cada celda: media ± desviación en **datos de prueba**, con 5 semillas. Exactitud: más es mejor. MSE: menos es mejor. Veredicto con prueba t pareada corregida por comparaciones múltiples (Benjamini-Hochberg, 5 %). Es una exploración: un 🟢 indica una pista que vale la pena confirmar, no una prueba definitiva.
 
 | Pieza | Tarea | Pieza (prueba) | Estándar (prueba) | Veredicto | Pieza en entreno | Parámetros (pieza / estándar) |
 |---|---|---|---|---|---|---|
@@ -21,7 +21,7 @@ Cada celda: media ± desviación en **datos de prueba**, con 5 semillas. Exactit
 | umbral_dinamico | circulos | 85.8 ± 1.3 % | 84.8 ± 0.6 % | ⚪ igual | 83.7 | 1,218 / 1,218 |
 | rmb | circulos | 85.7 ± 1.0 % | 84.8 ± 0.6 % | ⚪ igual | 84.0 | 3,330 / 1,218 |
 | hmn | circulos | 79.9 ± 1.4 % | 84.8 ± 0.6 % | 🔴 peor | 83.6 | 2,242 / 1,218 |
-| seno | circulos | 81.2 ± 1.7 % | 84.8 ± 0.6 % | 🔴 peor | 85.7 | 1,218 / 1,218 |
+| seno | circulos | 81.2 ± 1.7 % | 84.8 ± 0.6 % | ⚪ igual | 85.7 | 1,218 / 1,218 |
 | prelu_adaptativa | lunas | 96.2 ± 0.2 % | 96.3 ± 0.3 % | ⚪ igual | 98.0 | 1,282 / 1,218 |
 | integracion_no_lineal | lunas | 96.7 ± 0.0 % | 96.3 ± 0.3 % | ⚪ igual | 98.0 | 11,010 / 1,218 |
 | activacion_adaptativa | lunas | 96.3 ± 0.3 % | 96.3 ± 0.3 % | ⚪ igual | 97.6 | 1,346 / 1,218 |
@@ -29,26 +29,26 @@ Cada celda: media ± desviación en **datos de prueba**, con 5 semillas. Exactit
 | sma | lunas | 96.7 ± 0.4 % | 96.3 ± 0.3 % | ⚪ igual | 97.2 | 1,218 / 1,218 |
 | umbral_dinamico | lunas | 96.6 ± 0.2 % | 96.3 ± 0.3 % | ⚪ igual | 97.5 | 1,218 / 1,218 |
 | rmb | lunas | 86.4 ± 18.5 % | 96.3 ± 0.3 % | ⚪ igual | 85.3 | 3,330 / 1,218 |
-| hmn | lunas | 92.4 ± 2.2 % | 96.3 ± 0.3 % | 🔴 peor | 96.9 | 2,242 / 1,218 |
+| hmn | lunas | 92.4 ± 2.2 % | 96.3 ± 0.3 % | ⚪ igual | 96.9 | 2,242 / 1,218 |
 | seno | lunas | 96.1 ± 0.0 % | 96.3 ± 0.3 % | ⚪ igual | 97.9 | 1,218 / 1,218 |
 | prelu_adaptativa | xor | 97.7 ± 0.4 % | 98.2 ± 0.4 % | ⚪ igual | 100.0 | 1,282 / 1,218 |
 | integracion_no_lineal | xor | 97.7 ± 0.4 % | 98.2 ± 0.4 % | ⚪ igual | 100.0 | 11,010 / 1,218 |
 | activacion_adaptativa | xor | 97.8 ± 0.5 % | 98.2 ± 0.4 % | ⚪ igual | 100.0 | 1,346 / 1,218 |
-| ida | xor | 97.5 ± 0.0 % | 98.2 ± 0.4 % | 🔴 peor | 100.0 | 1,410 / 1,218 |
+| ida | xor | 97.5 ± 0.0 % | 98.2 ± 0.4 % | ⚪ igual | 100.0 | 1,410 / 1,218 |
 | sma | xor | 97.7 ± 0.4 % | 98.2 ± 0.4 % | ⚪ igual | 99.9 | 1,218 / 1,218 |
 | umbral_dinamico | xor | 96.8 ± 0.4 % | 98.2 ± 0.4 % | 🔴 peor | 100.0 | 1,218 / 1,218 |
 | rmb | xor | 92.3 ± 5.2 % | 98.2 ± 0.4 % | ⚪ igual | 93.9 | 3,330 / 1,218 |
 | hmn | xor | 90.8 ± 2.8 % | 98.2 ± 0.4 % | 🔴 peor | 99.6 | 2,242 / 1,218 |
 | seno | xor | 95.7 ± 0.9 % | 98.2 ± 0.4 % | 🔴 peor | 100.0 | 1,218 / 1,218 |
-| prelu_adaptativa | serie_seno | 0.0310 ± 0.0016 | 0.0332 ± 0.0011 | 🟢 mejor | 0.0182 | 1,569 / 1,505 |
-| integracion_no_lineal | serie_seno | 0.0308 ± 0.0010 | 0.0332 ± 0.0011 | ⚪ igual | 0.0178 | 13,857 / 1,505 |
-| activacion_adaptativa | serie_seno | 0.0290 ± 0.0006 | 0.0332 ± 0.0011 | 🟢 mejor | 0.0212 | 1,633 / 1,505 |
-| ida | serie_seno | 0.0287 ± 0.0005 | 0.0332 ± 0.0011 | 🟢 mejor | 0.0204 | 1,697 / 1,505 |
-| sma | serie_seno | 0.0307 ± 0.0038 | 0.0332 ± 0.0011 | ⚪ igual | 0.0229 | 1,505 / 1,505 |
-| umbral_dinamico | serie_seno | 0.0280 ± 0.0003 | 0.0332 ± 0.0011 | 🟢 mejor | 0.0208 | 1,505 / 1,505 |
-| rmb | serie_seno | 0.0290 ± 0.0007 | 0.0332 ± 0.0011 | 🟢 mejor | 0.0209 | 3,617 / 1,505 |
-| hmn | serie_seno | 0.4152 ± 0.0436 | 0.0332 ± 0.0011 | 🔴 peor | 0.0215 | 2,529 / 1,505 |
-| seno | serie_seno | 0.0286 ± 0.0009 | 0.0332 ± 0.0011 | 🟢 mejor | 0.0194 | 1,505 / 1,505 |
+| prelu_adaptativa | serie_seno | 0.0260 ± 0.0005 | 0.0261 ± 0.0007 | ⚪ igual | 0.0198 | 1,569 / 1,505 |
+| integracion_no_lineal | serie_seno | 0.0254 ± 0.0009 | 0.0261 ± 0.0007 | ⚪ igual | 0.0192 | 13,857 / 1,505 |
+| activacion_adaptativa | serie_seno | 0.0256 ± 0.0003 | 0.0261 ± 0.0007 | ⚪ igual | 0.0221 | 1,633 / 1,505 |
+| ida | serie_seno | 0.0245 ± 0.0002 | 0.0261 ± 0.0007 | 🟢 mejor | 0.0214 | 1,697 / 1,505 |
+| sma | serie_seno | 0.0283 ± 0.0016 | 0.0261 ± 0.0007 | ⚪ igual | 0.0254 | 1,505 / 1,505 |
+| umbral_dinamico | serie_seno | 0.0246 ± 0.0003 | 0.0261 ± 0.0007 | ⚪ igual | 0.0216 | 1,505 / 1,505 |
+| rmb | serie_seno | 0.0254 ± 0.0006 | 0.0261 ± 0.0007 | ⚪ igual | 0.0217 | 3,617 / 1,505 |
+| hmn | serie_seno | 0.3737 ± 0.0365 | 0.0261 ± 0.0007 | 🔴 peor | 0.0220 | 2,529 / 1,505 |
+| seno | serie_seno | 0.0243 ± 0.0003 | 0.0261 ± 0.0007 | 🟢 mejor | 0.0205 | 1,505 / 1,505 |
 | prelu_adaptativa | digitos | 96.9 ± 0.3 % | 97.1 ± 0.5 % | ⚪ igual | 100.0 | 3,530 / 3,466 |
 | integracion_no_lineal | digitos | 97.3 ± 0.4 % | 97.1 ± 0.5 % | ⚪ igual | 100.0 | 29,130 / 3,466 |
 | activacion_adaptativa | digitos | 96.8 ± 0.7 % | 97.1 ± 0.5 % | ⚪ igual | 100.0 | 3,594 / 3,466 |
@@ -59,7 +59,7 @@ Cada celda: media ± desviación en **datos de prueba**, con 5 semillas. Exactit
 | hmn | digitos | 92.6 ± 1.7 % | 97.1 ± 0.5 % | 🔴 peor | 100.0 | 4,490 / 3,466 |
 | seno | digitos | 97.1 ± 0.2 % | 97.1 ± 0.5 % | ⚪ igual | 100.0 | 3,466 / 3,466 |
 
-**Resumen:** 🟢 mejor: 6, ⚪ igual: 35, 🔴 peor: 13, 💥 falla: 0
+**Resumen:** 🟢 mejor: 2, ⚪ igual: 42, 🔴 peor: 10, 💥 falla: 0
 
 «Pieza en entreno» mucho mejor que «Pieza (prueba)» = la pieza memoriza en vez de aprender.
 Ojo: una pieza con muchos más parámetros que la estándar tiene ventaja; compárala también con una estándar más grande.

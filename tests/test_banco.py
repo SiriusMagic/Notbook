@@ -100,3 +100,40 @@ def test_informe_markdown():
 def test_tarea_desconocida():
     with pytest.raises(KeyError):
         cargar_tarea("no_existe")
+
+
+def test_una_semilla_o_sin_variacion_no_declara_ganador():
+    base = _corridas([0.80], pieza="estandar")
+    assert comparar(_corridas([0.99]), base).veredicto == "igual"
+    base3 = _corridas([0.80, 0.81, 0.82], pieza="estandar")
+    assert comparar(_corridas([0.90, 0.91, 0.92]), base3).veredicto == "igual"  # diferencia idéntica: sin ruido estimable
+
+
+def test_correccion_por_comparaciones_multiples():
+    from laboratorio.banco.evaluar import Comparacion, ajustar_multiples
+
+    def comp(p, veredicto):
+        return Comparacion("x", "t", "exactitud", 0.9, 0.01, 0.8, 0.01, 0.1, p, veredicto, 10, 10)
+
+    claro, justo = comp(0.0001, "mejor"), comp(0.03, "mejor")
+    ruido = [comp(0.2 + i * 0.03, "igual") for i in range(20)]
+    sin_p = comp(math.nan, "igual")
+    ajustar_multiples([claro, justo, sin_p, *ruido])
+    assert claro.veredicto == "mejor" and claro.p_ajustado == pytest.approx(0.0001 * 22)
+    assert justo.veredicto == "igual" and justo.p_ajustado == pytest.approx(0.03 * 22 / 2)
+    assert all(c.veredicto == "igual" for c in ruido) and math.isnan(sin_p.p_ajustado)
+
+
+def test_serie_dividida_en_orden_sin_fuga_de_futuro():
+    import numpy as np
+
+    from laboratorio.banco.tareas import _armar
+
+    # Serie = 0, 1, 2, …: cada objetivo es su propia posición en el tiempo.
+    serie = np.arange(100, dtype=float)
+    x = np.stack([serie[i : i + 5] for i in range(95)])
+    t = _armar("prueba", "regresion", x, serie[5:], 10, "", cronologico=True)
+    entreno, prueba = t.y_entreno.flatten(), t.y_prueba.flatten()
+    assert entreno.max() < prueba.min()  # todo el entrenamiento es anterior a la prueba
+    assert prueba.min() == entreno.max() + 1  # y no se pierde ningún punto
+    assert "último 30 %" in cargar_tarea("serie_seno").descripcion

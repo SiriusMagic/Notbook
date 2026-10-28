@@ -48,9 +48,16 @@ def _normalizar(entreno: np.ndarray, prueba: np.ndarray):
     return (entreno - media) / std, (prueba - media) / std
 
 
-def _armar(nombre, tipo, x, y, epocas, descripcion, normalizar_y=False):
+def _armar(nombre, tipo, x, y, epocas, descripcion, normalizar_y=False, cronologico=False):
     rng = np.random.default_rng(SEMILLA_DATOS)
-    xe, ye, xp, yp = _dividir(x.astype(np.float32), y, rng)
+    if cronologico:
+        # Series de tiempo: prueba = el último 30 %. Al azar, las ventanas que se solapan
+        # meterían valores futuros (los objetivos de prueba) en el entrenamiento.
+        corte = int(len(x) * 0.7)
+        x = x.astype(np.float32)
+        xe, ye, xp, yp = x[:corte], y[:corte], x[corte:], y[corte:]
+    else:
+        xe, ye, xp, yp = _dividir(x.astype(np.float32), y, rng)
     xe, xp = _normalizar(xe, xp)
     if tipo == "regresion":
         ye, yp = ye.astype(np.float32).reshape(-1, 1), yp.astype(np.float32).reshape(-1, 1)
@@ -95,7 +102,8 @@ def serie_seno(ventana: int = 12) -> Tarea:
     s = serie_estacional(600, periodo=40, amplitud=1.0, tendencia_final=0.0, ruido=0.1, semilla=SEMILLA_DATOS)
     x = np.stack([s[i : i + ventana] for i in range(len(s) - ventana)])
     y = s[ventana:]
-    return _armar("serie_seno", "regresion", x, y, 300, f"predecir el siguiente valor de una onda con ruido ({ventana} pasos previos)", normalizar_y=True)
+    return _armar("serie_seno", "regresion", x, y, 300, f"predecir el siguiente valor de una onda con ruido ({ventana} pasos previos; prueba = el último 30 %)",
+                  normalizar_y=True, cronologico=True)
 
 
 def digitos() -> Tarea:
