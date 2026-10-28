@@ -11,7 +11,6 @@ scipy>=1.13
 scikit-learn>=1.5.0
 joblib>=1.4.2
 tqdm>=4.66.3
-rich>=15.0.0
 
 # Deep learning
 torch>=2.14.1            # 2.6 corrige la ejecución de código en torch.load
@@ -31,8 +30,6 @@ pyvirtualdisplay>=3.0
 # Gráficos e imágenes
 matplotlib>=3.9
 seaborn>=0.13
-plotly>=5.24
-altair>=5.4
 networkx>=3.3
 pillow>=11.0
 opencv-python-headless>=4.10

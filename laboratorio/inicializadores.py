@@ -55,3 +55,40 @@ class InicializadorLorenz:
         std = tramo.std()
         normal = (tramo - tramo.mean()) / std if std > 0 else np.zeros_like(tramo)
         return (normal * np.sqrt(2.0 / fan_in(forma))).reshape(forma)
+
+
+# ---------------------------------------------------------------- Ruido Perlin
+def ruido_perlin(x: np.ndarray, y: np.ndarray, semilla: int = 0) -> np.ndarray:
+    """Ruido Perlin 2D clásico (Ken Perlin, 2002), vectorizado. Valores aproximadamente en [-1, 1].
+
+    Reemplaza a ``opensimplex.noise2`` del cuaderno: es la misma familia de ruido «suave» (valores
+    vecinos parecidos) y no necesita instalar nada.
+    """
+    perm = np.random.default_rng(semilla).permutation(256)
+    perm = np.concatenate([perm, perm])
+    angulos = np.arange(8) * np.pi / 4
+    gradientes = np.stack([np.cos(angulos), np.sin(angulos)], 1)
+    x0, y0 = np.floor(x).astype(int), np.floor(y).astype(int)
+    fx, fy = x - x0, y - y0
+    xi, yi = x0 & 255, y0 & 255
+
+    def esquina(dx, dy):
+        g = gradientes[perm[perm[xi + dx] + yi + dy] % 8]
+        return g[..., 0] * (fx - dx) + g[..., 1] * (fy - dy)
+
+    suave = lambda t: t * t * t * (t * (t * 6 - 15) + 10)  # noqa: E731
+    u, v = suave(fx), suave(fy)
+    arriba = esquina(0, 0) + u * (esquina(1, 0) - esquina(0, 0))
+    abajo = esquina(0, 1) + u * (esquina(1, 1) - esquina(0, 1))
+    return (arriba + v * (abajo - arriba)) * np.sqrt(2)
+
+
+def pesos_perlin(forma: tuple[int, ...], escala: float = 0.05, desfase: float = 0.0, semilla: int = 0) -> np.ndarray:
+    """Pesos con ruido Perlin recorrido en diagonal, como la celda «inicializador de pesos» del cuaderno 02
+    (``noise2(x=i·escala, y=i·escala·1,5)``), con escala He.
+
+    Arreglo: el cuaderno usaba las salidas como «fan_in»; aquí se usan las entradas (igual que Lorenz).
+    """
+    i = np.arange(int(np.prod(forma)), dtype=float) + desfase
+    ruido = ruido_perlin(i * escala, i * escala * 1.5, semilla)
+    return (ruido * np.sqrt(2.0 / fan_in(forma))).reshape(forma)

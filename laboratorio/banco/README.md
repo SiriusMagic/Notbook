@@ -159,6 +159,8 @@ En `piezas_02.py`. Ganarle a ReLU ya no basta: ahora tus piezas también compite
 | `memoria_atencion` | mezcla gradientes recordados según el parecido de la entrada | 02 · celdas 18-19 |
 | `memoria_embedding` | recuerda las pérdidas como embeddings y ajusta la capa | 02 · celdas 20-22 |
 | `memoria_atencion_embedding` | igual, con atención Q/K/V sobre la memoria | 02 · celdas 23-25 |
+| `inicio_perlin` | lineal + ReLU con pesos iniciales de ruido Perlin (escala He) | 02 · inicializador de pesos |
+| `inicio_lorenz` | lineal + ReLU con pesos iniciales del atractor de Lorenz (escala He) | 02 · inicializador de pesos |
 | `denso_cruzada` | cada capa recibe todas las anteriores (como DenseNet) | 02 · celda 32 |
 | `densa_entrada` | igual, y además cada capa recibe la entrada original | 02 · celda 34 |
 
@@ -168,6 +170,7 @@ Adaptaciones (anotadas en el código):
 - Las reglas «después del paso» las llama el banco en cada lote. En el cuaderno se llamaban a mano.
 - **Memoria de errores**: ahora sabe qué error tuvo cada muestra; antes había que pasárselo a mano.
 - **Memoria con embeddings**: en el cuaderno era la neurona de salida de una red de regresión. Aquí es una capa oculta, para poder compararla con las demás piezas.
+- **Inicializadores Perlin y Lorenz**: el ruido Perlin se calcula con NumPy (`inicializadores.ruido_perlin`) en vez de `opensimplex`. Cada semilla empieza en otro punto del ruido o de la trayectoria; si no, todas las semillas tendrían los mismos pesos y no se podría medir el azar. Como en Lorenz, la escala usa las entradas y no las salidas.
 - **Denso-cruzada y densa de entrada**: no son una capa sino una forma de conectar capas, así que arman la red entera (`Pieza.red`).
 
 - **Arreglo de inicio**: las cuatro capas con tanh (memoria de errores, de gradiente, LR por neurona y memoria con atención) empezaban con pesos `randn × 0,1`. Así quedaban atascadas en la regresión cúbica, con 60 veces más error que ReLU, y daba igual tener la regla de memoria o no. Ahora usan el mismo inicio que `nn.Linear`.
@@ -180,6 +183,7 @@ Informe completo: [`resultados-02-memorias.md`](resultados-02-memorias.md). Son 
 - **Memoria de errores** y **LR por neurona** salen **peores** en regresión cúbica (2–3 veces más error). LR por neurona también sale peor en XOR. Su paso extra después del optimizador estorba al optimizador (Adam), que ya hace ese trabajo.
 - **Memoria de gradiente** y **memoria con atención** empatan: su paso extra se parece a un *momentum*, y Adam ya lo tiene.
 - **Memoria con embeddings** (con y sin atención) y las **topologías densas** empatan, pero usan de 3 a 8 veces más parámetros.
+- **Inicializadores Perlin y Lorenz** empatan en las 6 tareas: con Adam, el punto de partida casi no importa en redes de este tamaño.
 - De la industria, solo **GELU** gana, y solo en la serie de seno (≈ 8 % menos error). Las demás empatan con ReLU en estas tareas pequeñas.
 - **Conclusión para invertir**: en tareas pequeñas nada de esta tanda justifica más tiempo. Si quieres darles otra oportunidad, la prueba siguiente es con datos reales (`--competencia --grupo tuyas`), donde una memoria podría ayudar con datos ruidosos.
 

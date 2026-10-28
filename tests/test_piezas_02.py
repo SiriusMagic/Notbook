@@ -69,3 +69,25 @@ def test_memoria_embedding_no_depende_del_lote(pieza):
         juntos = red(x)
         separados = torch.cat([red(x[i : i + 1]) for i in range(len(x))])
     assert torch.allclose(juntos, separados, atol=1e-6)
+
+
+def test_ruido_perlin_suave_y_acotado():
+    import numpy as np
+
+    from laboratorio.inicializadores import pesos_perlin, ruido_perlin
+
+    rng = np.random.default_rng(0)
+    r = ruido_perlin(rng.random(5000) * 40, rng.random(5000) * 40)
+    assert np.abs(r).max() <= 1.0 + 1e-9 and r.std() > 0.1
+    assert np.allclose(ruido_perlin(np.arange(5.0), np.arange(5.0)), 0)  # vale 0 en los puntos de la cuadrícula
+    w = pesos_perlin((16, 8))
+    assert w.shape == (16, 8) and np.corrcoef(w.ravel()[:-1], w.ravel()[1:])[0, 1] > 0.8  # vecinos parecidos
+
+
+@pytest.mark.parametrize("pieza", ["inicio_perlin", "inicio_lorenz"])
+def test_inicios_especiales_repetibles_y_distintos_por_semilla(pieza):
+    def pesos(semilla):
+        torch.manual_seed(semilla)
+        return Red(PIEZAS[pieza], 4, 2, ocultas=8).capa1.lineal.weight.detach().clone()
+
+    assert torch.equal(pesos(0), pesos(0)) and not torch.equal(pesos(0), pesos(1))
