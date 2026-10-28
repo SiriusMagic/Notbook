@@ -9,6 +9,7 @@ Partes de los cuadernos de [`laboratorio-neuronal/`](../laboratorio-neuronal) qu
 | `entrenamiento.py` | `ProgramadorLR`: baja la tasa de aprendizaje cuando el modelo se estanca | 08 · Programador dinámico de tasa de aprendizaje | Pasa a ser una clase que guarda su estado |
 | `inicializadores.py` | Pesos iniciales sacados del atractor de Lorenz (sistema caótico) con escala He | 02 · Inicializador con Perlin y Lorenz | Calculaba la escala con las salidas en vez de las entradas |
 | `ensamble.py` | Voto ponderado de varios clasificadores | 08 · `weighted_vote` | Ya no carga modelos con `joblib.load` (puede ejecutar código ajeno) |
+| `banco/` | **Banco de evaluación**: compara las neuronas, activaciones y capas de investigación contra una red estándar, con varias semillas y veredicto honesto. Ver [`banco/README.md`](banco/README.md) | 02 y 04 · experimentos «X contra RedEstandar» | Cada experimento se había probado una sola vez, sin datos de prueba aparte |
 | `capas_torch.py` | Capa de inversión de gradiente (GRL) para PyTorch | 07 · Inversión de gradiente | Lambda como número y salida como copia |
 
 ## Uso
