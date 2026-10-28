@@ -218,12 +218,12 @@ class CapaInicioEspecial(nn.Module):
         self.lineal = nn.Linear(entradas, salidas)
         forma = (salidas, entradas)
         if tipo == "perlin":
-            desfase = float(torch.randint(0, 100_000, ()).item())
-            pesos = pesos_perlin(forma, desfase=desfase, semilla=int(torch.randint(0, 2**31, ()).item()))
+            desfase = float(_sorteo(100_000))
+            pesos = pesos_perlin(forma, desfase=desfase, semilla=_sorteo(2**31))
         else:
             n = salidas * entradas
             trayectoria = _trayectoria_lorenz(puntos_lorenz)
-            inicio = int(torch.randint(0, len(trayectoria) - n, ()).item())
+            inicio = _sorteo(len(trayectoria) - n)
             tramo = trayectoria[inicio : inicio + n]
             tramo = (tramo - tramo.mean()) / (tramo.std() or 1.0)
             pesos = (tramo * np.sqrt(2.0 / entradas)).reshape(forma)
@@ -235,6 +235,13 @@ class CapaInicioEspecial(nn.Module):
 
 
 _LORENZ = None
+
+
+def _sorteo(tope: int) -> int:
+    """Número al azar que depende de la semilla, sin mover el generador global: así las demás capas reciben
+    exactamente los mismos pesos iniciales que en la red estándar y solo cambia lo que se quiere medir."""
+    with torch.random.fork_rng(devices=[]):
+        return int(torch.randint(0, tope, ()).item())
 
 
 def _trayectoria_lorenz(puntos_lorenz):

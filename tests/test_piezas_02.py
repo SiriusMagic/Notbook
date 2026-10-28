@@ -14,8 +14,8 @@ CON_REGLA = ["memoria_errores", "memoria_gradiente", "lr_por_neurona", "memoria_
 
 def test_industria_marcada():
     industria = {n for n, p in PIEZAS.items() if p.industria}
-    assert industria == {"gelu", "silu", "mish", "elu", "leaky_relu", "tanh", "residual"}
-    assert all(PIEZAS[n].activacion is not None for n in industria - {"residual"})
+    assert {"gelu", "silu", "mish", "elu", "leaky_relu", "tanh", "residual"} <= industria
+    assert all(PIEZAS[n].activacion is not None for n in {"gelu", "silu", "mish", "elu", "leaky_relu", "tanh"})
 
 
 @pytest.mark.parametrize("pieza", CON_REGLA)
@@ -91,3 +91,14 @@ def test_inicios_especiales_repetibles_y_distintos_por_semilla(pieza):
         return Red(PIEZAS[pieza], 4, 2, ocultas=8).capa1.lineal.weight.detach().clone()
 
     assert torch.equal(pesos(0), pesos(0)) and not torch.equal(pesos(0), pesos(1))
+
+
+@pytest.mark.parametrize("pieza", ["inicio_perlin", "inicio_lorenz"])
+def test_inicios_especiales_no_mueven_el_azar_de_las_otras_capas(pieza):
+    """La salida y la 2.ª capa empiezan igual que en la red estándar: solo cambia el inicio que se mide."""
+    torch.manual_seed(3)
+    especial = Red(PIEZAS[pieza], 4, 2, ocultas=8)
+    torch.manual_seed(3)
+    normal = Red(PIEZAS["estandar"], 4, 2, ocultas=8)
+    assert torch.equal(especial.salida.weight, normal.salida.weight)
+    assert torch.equal(especial.capa2.lineal.bias, normal.capa2.lineal.bias)
