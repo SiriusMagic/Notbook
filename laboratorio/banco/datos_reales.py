@@ -107,6 +107,19 @@ def _serie(repo: str, archivo: str, serie_id: str) -> np.ndarray:
     return y
 
 
+def textos_reales(nombre: str, entreno: int | None = None, prueba: int | None = None):
+    """Textos crudos y etiquetas de una tarea de texto: (textos_e, y_e, textos_p, y_p)."""
+    fuente = FUENTES[nombre]
+    if fuente.tipo != "texto":
+        raise ValueError(f"{nombre} no es una tarea de texto")
+    ne = entreno or int(os.environ.get("LABORATORIO_ENTRENO", 0)) or fuente.entreno
+    np_ = prueba or int(os.environ.get("LABORATORIO_PRUEBA", 0)) or fuente.prueba
+    fe = _muestra(fuente.repo, "train", ne, SEMILLA_DATOS)
+    fp = _muestra(fuente.repo, "test", np_, SEMILLA_DATOS)
+    col = fuente.columna
+    return ([f[col] for f in fe], [f["label"] for f in fe], [f[col] for f in fp], [f["label"] for f in fp])
+
+
 # ---------------------------------------------------------------- Imágenes y texto
 def imagenes_a_matriz(imagenes) -> tuple[np.ndarray, tuple[int, int, int]]:
     """Devuelve (filas aplanadas, forma (canales, alto, ancho))."""

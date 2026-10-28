@@ -119,7 +119,8 @@ def test_competencia_e_informe():
 
 
 def test_todas_las_arquitecturas_registradas():
-    assert set(ARQUITECTURAS) == {"densa", "cnn", "texto_cnn", "transformer", "serie_cnn", "lstm"}
+    assert {"densa", "cnn", "texto_cnn", "transformer", "serie_cnn", "lstm"} <= set(ARQUITECTURAS)
+    assert {"transformer_senoidal", "transformer_jer_pares", "transformer_jer_palabra"} <= set(ARQUITECTURAS)
 
 
 def test_mapa_por_tipo_de_dato():
