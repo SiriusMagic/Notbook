@@ -32,7 +32,10 @@ def test_pieza_forma_gradiente_y_sin_nan(pieza):
     x = torch.randn(10, 3)
     y = red(x)
     assert y.shape == (10, 2) and torch.isfinite(y).all()
-    y.pow(2).mean().backward()
+    perdida = y.pow(2).mean()
+    if hasattr(red, "perdida_extra"):  # p. ej. el router con REINFORCE solo aprende por esta vía
+        perdida = perdida + red.perdida_extra(y, torch.zeros_like(y))
+    perdida.backward()
     sin_grad = [n for n, p in red.named_parameters() if p.grad is None]
     assert not sin_grad, f"parámetros sin gradiente: {sin_grad}"
     c = entrenar_una(pieza, "circulos", 0, RAPIDO)
