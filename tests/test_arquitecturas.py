@@ -10,7 +10,7 @@ pytest.importorskip("sklearn")
 pytest.importorskip("scipy")
 
 from laboratorio.banco import datos_reales  # noqa: E402
-from laboratorio.banco.arquitecturas import ARQUITECTURAS, crear_modelo  # noqa: E402
+from laboratorio.banco.arquitecturas import ARQUITECTURAS, INVESTIGACION, crear_modelo  # noqa: E402
 from laboratorio.banco.competencia import competir, informe_competencia  # noqa: E402
 from laboratorio.banco.evaluar import Config, _medir, _predecir, cargar_modelo, entrenar_una  # noqa: E402
 from laboratorio.banco.piezas import PIEZAS, ActivacionAdaptativa, ActivacionIDA  # noqa: E402
@@ -193,6 +193,7 @@ def test_competencia_incluye_tus_arquitecturas():
     finally:
         competencia.cargar_tarea, ev.cargar_tarea = original, original_ev
     inv = [f for f in filas if f.investigacion]
-    assert {f.arquitectura for f in inv} == {"atencion_binaria_rl", "atencion_niveles_rl", "atencion_hebbiana"}
+    assert {f.arquitectura for f in inv} == set(INVESTIGACION["texto"])
+    assert {"atencion_binaria_rl", "atencion_niveles_rl", "atencion_hebbiana"} <= set(INVESTIGACION["texto"])
     assert all(set(f.contra_normales) == {"texto_cnn", "transformer", "fasttext"} for f in inv)
     assert "vs fastText" in texto and "vs TextCNN" in texto
