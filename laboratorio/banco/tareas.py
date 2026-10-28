@@ -3,7 +3,7 @@ entrenamiento / prueba para que todas las piezas se midan igual."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import torch
@@ -31,6 +31,7 @@ class Tarea:
     vocabulario: int | None = None  # texto con ids: cuántas palabras distintas
     representacion: str = "plano"  # "plano" (vector) o "ids" (palabras numeradas)
     ingenuo: float | None = None  # series: error de repetir el último valor (la referencia más simple)
+    extra: dict = field(default_factory=dict)  # datos adicionales (p. ej. qué tokens empiezan palabra)
 
     @property
     def metrica(self) -> str:

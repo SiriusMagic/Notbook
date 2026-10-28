@@ -36,6 +36,36 @@ Genera `resultados/informe.md` (una tabla) y `resultados/AAAA-MM-DD.jsonl` (cada
 | `serie_seno` | predecir el siguiente valor de una onda con ruido | MSE |
 | `digitos` | dígitos 8×8 de scikit-learn (un MNIST pequeño, sin descargas) | exactitud |
 
+## Cuaderno 01: texto contra la industria
+
+```bash
+python -m laboratorio.banco --tokenizadores --tarea resenas_es   # tokenizadores.md
+python -m laboratorio.banco --segmentadores                      # segmentadores.md
+python -m laboratorio.banco --competencia --tipo texto           # agentes de atención y piezas vs TextCNN, Transformer, fastText
+```
+
+- **Tokenizadores** (`tokenizadores.py`): sílabas por reglas y la heurística original del cuaderno contra palabras, caracteres, BPE (GPT, Llama), SentencePiece Unigram (T5, Gemma) y el de GPT-4o (`tiktoken`).
+  - Todos usan el mismo vocabulario: 8 000 unidades.
+  - Mide tokens por palabra, desconocidas, textos truncados, velocidad y exactitud con TextCNN y Transformer.
+  - Con las sílabas también compite tu **posición jerárquica**, en sus dos versiones: por pares de sílabas (la del cuaderno) y por palabra + sílaba. Se compara contra la posición aprendida y la senoidal.
+- **Segmentadores** (`segmentadores.py`): reglas, heurística del cuaderno, pyphen, la BiLSTM de la celda 16 y un Transformer de caracteres.
+  - Se miden con 128 palabras silabeadas a mano según la RAE (`silabas_referencia.py`).
+- **Agentes de atención** (`arquitecturas.py`):
+  - tu atención binaria con RL (celda 31);
+  - tu atención por niveles con RL (celdas 32 y 36);
+  - tu atención «hebbiana» (celda 33).
+
+  Compiten contra la mejor arquitectura normal y se mide qué parte del texto leen. En el cuaderno, el clasificador y los embeddings no se entrenaban; aquí sí, y REINFORCE usa línea base.
+
+## Mediciones de hardware y por dentro (todas las competencias)
+
+`medicion.py` añade a cada corrida:
+- **Hardware**: latencia para un ejemplo (mediana y p95), ejemplos/s y tokens/s, peso de la red y VRAM pico en GPU.
+- **Por dentro**: neuronas muertas e inmóviles, normas de activación, gradiente por capa (¿se desvanece?) y eficiencia (exactitud por millón de parámetros).
+- **CKA** contra la red normal, junto al CKA de la red normal consigo misma con otra semilla, que es lo que cambia solo por azar.
+
+El informe de la competencia trae una tabla «Hardware y por dentro» por tarea.
+
 ## Competencia contra la tecnología normal
 
 ```bash
@@ -49,7 +79,7 @@ Cada pieza compite contra la arquitectura que se usa hoy para cada tipo de dato:
 | Datos | Arquitecturas | Cómo entra tu pieza |
 |---|---|---|
 | imagen | `densa`, **`cnn`** (2 bloques conv + BatchNorm) | en la parte final; si es activación (PReLU, IDA, adaptativa, seno), también en lugar de ReLU dentro de la CNN |
-| texto | `densa` (TF-IDF), **`texto_cnn`** (TextCNN), **`transformer`** (2 capas, 4 cabezas) | en la parte final; en TextCNN también como activación |
+| texto | `densa` (TF-IDF), **`texto_cnn`** (TextCNN), **`transformer`** (2 capas, 4 cabezas), **`fasttext`** | en la parte final; en TextCNN también como activación |
 | serie | `densa`, **`serie_cnn`** (CNN 1D), **`lstm`** | en la parte final; en la CNN 1D también como activación |
 
 El informe `competencia.md` tiene una **tabla de posiciones** por tarea. Para cada modelo muestra:

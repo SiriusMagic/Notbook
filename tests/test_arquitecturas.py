@@ -119,7 +119,8 @@ def test_competencia_e_informe():
 
 
 def test_todas_las_arquitecturas_registradas():
-    assert set(ARQUITECTURAS) == {"densa", "cnn", "texto_cnn", "transformer", "serie_cnn", "lstm"}
+    assert {"densa", "cnn", "texto_cnn", "transformer", "serie_cnn", "lstm"} <= set(ARQUITECTURAS)
+    assert {"transformer_senoidal", "transformer_jer_pares", "transformer_jer_palabra"} <= set(ARQUITECTURAS)
 
 
 def test_mapa_por_tipo_de_dato():
@@ -149,3 +150,49 @@ def test_linea_de_comandos_filtra_tareas_por_arquitectura(tmp_path, capsys):
     assert "| seno | digitos |" in informe and "circulos" not in informe
     with pytest.raises(SystemExit):
         main(["--arquitectura", "cnn", "--tarea", "circulos", "--salida", str(tmp_path)])
+
+
+@pytest.mark.parametrize("arq", ["fasttext", "atencion_binaria_rl", "atencion_niveles_rl", "atencion_hebbiana"])
+def test_agentes_de_atencion_y_fasttext_aprenden(arq):
+    t = _tarea_texto_ids()
+    c = entrenar_una("estandar", t, 0, Config(epocas=30, lote=16, lr=0.003, arquitectura=arq))
+    assert c.valor == 1.0, arq
+    if arq.endswith("_rl"):
+        assert 0 < c.medidas["fraccion_atendida"] <= 1
+
+
+def test_reinforce_premia_las_elecciones_que_aciertan():
+    from laboratorio.banco.arquitecturas import ExtractorAtencionBinaria
+
+    ext = ExtractorAtencionBinaria(PIEZAS["estandar"], 10, dim=4)
+    ext.log_probs = torch.tensor([-1.0, -1.0], requires_grad=True)
+    salida = torch.tensor([[2.0, 0.0], [2.0, 0.0]])  # predice clase 0 en ambos
+    perdida = ext.perdida_extra(salida, torch.tensor([0, 1]))  # acierta el 1.º, falla el 2.º
+    perdida.backward()
+    assert ext.log_probs.grad[0] < 0 < ext.log_probs.grad[1]  # sube la probabilidad de lo que acertó
+
+
+def test_competencia_incluye_tus_arquitecturas():
+    from laboratorio.banco import competencia
+
+    ids = _tarea_texto_ids()
+    buenas = ["excelente producto me encanta", "muy bueno lo recomiendo", "perfecto llegó rápido y bien"]
+    malas = ["pésimo no funciona nada", "muy malo se rompió", "horrible no lo compren"]
+    filas_hf = [{"text": (buenas if i % 2 else malas)[i % 3], "label": i % 2} for i in range(60)]
+    fuente = datos_reales.FuenteHF("falsa", "x/y", "texto", "text", "prueba", 2, lote=16)
+    plano = datos_reales.armar_tarea(fuente, filas_hf, filas_hf[:20], representacion="plano")
+    elegir = lambda nombre, rep="plano": ids if rep == "ids" else plano  # noqa: E731
+    original = competencia.cargar_tarea
+    competencia.cargar_tarea = elegir
+    import laboratorio.banco.evaluar as ev
+    original_ev = ev.cargar_tarea
+    ev.cargar_tarea = elegir
+    try:
+        filas = competir(["falsa"], [], {"semillas": (0, 1), "epocas": 3, "lote": 16}, aviso=lambda *_: None)
+        texto = informe_competencia(filas, "2")
+    finally:
+        competencia.cargar_tarea, ev.cargar_tarea = original, original_ev
+    inv = [f for f in filas if f.investigacion]
+    assert {f.arquitectura for f in inv} == {"atencion_binaria_rl", "atencion_niveles_rl", "atencion_hebbiana"}
+    assert all(set(f.contra_normales) == {"texto_cnn", "transformer", "fasttext"} for f in inv)
+    assert "vs fastText" in texto and "vs TextCNN" in texto
