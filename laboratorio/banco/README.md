@@ -305,7 +305,7 @@ Informe completo: [`resultados-04.md`](resultados-04.md). Son 24 comparaciones: 
 
 - **Decorrelación** en capa densa: empata en las 6 tareas.
 - **Papelito preguntón** (las tres versiones): empata en casi todo y pierde en círculos (79-80 % contra 85 %). Usa 5 veces más parámetros y **memoriza**: acierta 88-89 % al entrenar en círculos.
-- **CNN auto-decorrelada** contra la CNN normal (dígitos, 5 semillas): **peor**, 97,1 % contra 98,4 % (p = 0,03). Castigar que los filtros se parezcan estorba en esta red pequeña.
+- **CNN auto-decorrelada** contra la CNN normal (dígitos, 5 semillas): **empate**, 97,9 % contra 98,4 % (p = 0,14). Una primera versión medía la covarianza antes de BatchNorm y salía peor (97,1 %): la red podía bajar la pérdida achicando pesos sin decorrelacionar de verdad (lo encontró Codex). Ahora se mide después de la activación, como en el cuaderno.
 - **Celda recurrente RCF** contra la LSTM (serie de seno): **peor**, 0,0282 contra 0,0256 (p = 0,01). Contra la CNN 1D, empate.
 - Falta probar las dos arquitecturas con MNIST, CIFAR-10 y series reales (con GPU): `--competencia --tipo imagen` y `--tipo serie`.
 

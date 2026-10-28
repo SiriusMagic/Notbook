@@ -38,7 +38,7 @@ Ojo: una pieza con muchos más parámetros que la estándar tiene ventaja; comp�
 ## Arquitecturas de investigación contra las normales (5 semillas)
 
 ```
-digitos: cnn_decorrelada 0.9707 ± 0.0092 (28618 p.) vs cnn 0.9837 ± 0.0040 (28618 p.) → peor (p = 0.029)
+digitos: cnn_decorrelada 0.9789 ± 0.0046 (28618 p.) vs cnn 0.9837 ± 0.0040 (28618 p.) → igual (p = 0.144)
 serie_seno: rcf_recurrente 0.0282 ± 0.0013 (13729 p.) vs lstm 0.0256 ± 0.0004 (20321 p.) → peor (p = 0.010)
 serie_seno: rcf_recurrente 0.0282 ± 0.0013 (13729 p.) vs serie_cnn 0.0266 ± 0.0009 (18753 p.) → igual (p = 0.124)
 ```
