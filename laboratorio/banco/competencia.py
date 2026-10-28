@@ -48,7 +48,7 @@ class Fila:
 NOMBRES = {"densa": "Red densa", "cnn": "CNN", "texto_cnn": "TextCNN", "transformer": "Transformer",
            "serie_cnn": "CNN 1D", "lstm": "LSTM", "fasttext": "fastText",
            "atencion_binaria_rl": "Tu atención binaria con RL", "atencion_niveles_rl": "Tu atención por niveles con RL",
-           "atencion_hebbiana": "Tu atención hebbiana"}
+           "atencion_hebbiana": "Tu atención hebbiana", "cnn_densa_entrada": "Tu CNN con entrada densa"}
 
 
 def _promedio_medidas(corridas: list[Corrida]) -> dict:
