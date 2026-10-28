@@ -9,7 +9,7 @@ numpy>=2.5.4
 pandas>=2.2
 scipy>=1.13
 scikit-learn>=1.5.0
-joblib>=1.4.2
+joblib>=1.6.0
 tqdm>=4.66.3
 
 # Deep learning
