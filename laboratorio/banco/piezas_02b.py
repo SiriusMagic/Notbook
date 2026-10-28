@@ -117,10 +117,13 @@ class CapaDropout(nn.Module):
 # ---------------------------------------------------------------- GMO (celda 41)
 class RedGMO(nn.Module):
     """La red estándar con Optimización por Mutación Global: con probabilidad 5 % por paso, perturba TODOS los
-    pesos con ruido y se queda con la mutación solo si la pérdida mejora al menos 1 % sobre la mejor vista.
+    pesos con ruido y se queda con la mutación solo si la pérdida mejora al menos 1 %.
 
-    Arreglo: el cuaderno medía la pérdida mutada con todo el conjunto de datos (variables globales); aquí con el
-    lote actual, que el banco le pasa (``perdida_de``). Con las tareas pequeñas el lote es todo el conjunto.
+    Arreglos:
+    - El cuaderno medía con todo el conjunto (variables globales) y comparaba con la mejor pérdida vista. Con
+      lotes eso no sirve: cada lote tiene otra dificultad. Aquí se mide la pérdida del **mismo lote** antes y
+      después de mutar (el banco pasa ``perdida_de``, que evalúa el modelo entero en modo evaluación, sin
+      dropout). Con las tareas pequeñas el lote es todo el conjunto, como en el cuaderno.
     """
 
     def __init__(self, entradas: int, salidas: int, ocultas: int, fuerza=0.05, probabilidad=0.05) -> None:
@@ -129,27 +132,21 @@ class RedGMO(nn.Module):
         self.capa2 = nn.Linear(ocultas, ocultas)
         self.salida = nn.Linear(ocultas, salidas)
         self.fuerza, self.probabilidad = fuerza, probabilidad
-        self.mejor = float("inf")
         self.mutaciones = 0  # aceptadas (el banco las informa)
         self.azar = random.Random(0)
 
     def forward(self, x):
         return self.salida(F.relu(self.capa2(F.relu(self.capa1(x)))))
 
-    def despues_del_paso(self, perdida, perdida_de=None, **_):
-        self.mejor = min(self.mejor, float(perdida))
+    def despues_del_paso(self, perdida_de=None, **_):
         if perdida_de is None or self.azar.random() >= self.probabilidad:
             return
+        antes = float(perdida_de())
         original = copy.deepcopy(self.state_dict())
-        estaba = self.training
         with torch.no_grad():
             for p in self.parameters():
                 p.add_(torch.randn_like(p) * self.fuerza)
-            self.eval()
-            mutada = float(perdida_de())
-        self.train(estaba)
-        if mutada < self.mejor * 0.99:
-            self.mejor = mutada
+        if float(perdida_de()) < antes * 0.99:
             self.mutaciones += 1
         else:
             self.load_state_dict(original)

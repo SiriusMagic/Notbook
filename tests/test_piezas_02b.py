@@ -65,15 +65,27 @@ def test_norma_caos_igual_al_entrenar_y_al_evaluar():
     assert norma(x[:1]).shape == (1, 3)  # lote de 1: no falla
 
 
-def test_gmo_solo_acepta_mutaciones_que_mejoran():
+def test_gmo_compara_con_el_mismo_lote_y_solo_acepta_si_mejora():
     torch.manual_seed(0)
     red = RedGMO(2, 1, 4, probabilidad=1.0)
     antes = {k: v.clone() for k, v in red.state_dict().items()}
-    red.despues_del_paso(perdida=0.0, perdida_de=lambda: torch.tensor(1.0))  # nunca mejora
+    red.despues_del_paso(perdida_de=lambda: 1.0)  # misma pérdida antes y después: se rechaza
     assert all(torch.equal(v, antes[k]) for k, v in red.state_dict().items()) and red.mutaciones == 0
-    red.mejor = float("inf")
-    red.despues_del_paso(perdida=float("inf"), perdida_de=lambda: torch.tensor(0.5))  # siempre mejora
+    valores = iter([1.0, 0.5])  # antes 1,0 en este lote; mutada 0,5 → se acepta
+    red.despues_del_paso(perdida_de=lambda: next(valores))
     assert red.mutaciones == 1 and any(not torch.equal(v, antes[k]) for k, v in red.state_dict().items())
+
+
+def test_perdida_de_evalua_el_modelo_entero_sin_dropout():
+    from laboratorio.banco.evaluar import _perdida_en_evaluacion
+    from laboratorio.banco.tareas import cargar_tarea
+
+    t = cargar_tarea("circulos")
+    modelo = torch.nn.Sequential(torch.nn.Linear(2, 8), torch.nn.Dropout(0.5), torch.nn.Linear(8, 2))
+    modelo.train()
+    a = _perdida_en_evaluacion(t, modelo, t.x_prueba, t.y_prueba)
+    assert a == _perdida_en_evaluacion(t, modelo, t.x_prueba, t.y_prueba)  # sin azar del dropout
+    assert modelo.training  # vuelve al modo en que estaba
 
 
 def test_cdm_tiene_perdida_del_extractor():

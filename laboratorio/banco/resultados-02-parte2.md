@@ -32,7 +32,7 @@ Cada celda: media ± desviación en **datos de prueba**, con 5 semillas. Exactit
 | polinomica | lunas | 96.4 ± 0.3 % | 96.3 ± 0.3 % | ⚪ igual | 98.3 | 34,306 / 1,218 |
 | resonante | lunas | 96.9 ± 0.3 % | 96.3 ± 0.3 % | ⚪ igual | 97.5 | 1,218 / 1,218 |
 | dmna | lunas | 96.3 ± 0.3 % | 96.3 ± 0.3 % | ⚪ igual | 97.9 | 1,218 / 1,218 |
-| gmo | lunas | 96.3 ± 0.3 % | 96.3 ± 0.3 % | ⚪ igual | 97.8 | 1,218 / 1,218 |
+| gmo | lunas | 96.3 ± 0.3 % | 96.3 ± 0.3 % | ⚪ igual | 97.7 | 1,218 / 1,218 |
 | cdm | lunas | 96.2 ± 0.2 % | 96.3 ± 0.3 % | ⚪ igual | 97.9 | 1,224 / 1,218 |
 | hiper_relu | lunas | 96.3 ± 0.5 % | 96.3 ± 0.3 % | ⚪ igual | 98.3 | 1,218 / 1,218 |
 | norma_caos | lunas | 95.9 ± 1.2 % | 96.3 ± 0.3 % | ⚪ igual | 97.9 | 1,410 / 1,218 |
