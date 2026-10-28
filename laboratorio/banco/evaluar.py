@@ -37,6 +37,7 @@ class Config:
     validacion: float = 0.15  # parte del entrenamiento que se separa para decidir la parada
     guardar: str | None = None  # carpeta donde guardar el mejor modelo de cada corrida
     arquitectura: str = "densa"  # densa, cnn, texto_cnn, transformer, serie_cnn o lstm (ver arquitecturas.py)
+    medir: bool = True  # latencia, memoria, neuronas muertas, gradientes… (ver medicion.py)
     dispositivo: str = "auto"  # "auto" usa la GPU si hay (Colab), si no la CPU
 
 
@@ -70,6 +71,7 @@ class Corrida:
     valor_entreno: float = math.nan  # misma métrica en los datos de entrenamiento (para ver memorización)
     arquitectura: str = "densa"
     detalle: dict = field(default_factory=dict)
+    medidas: dict = field(default_factory=dict)  # hardware e internas (medicion.py)
 
 
 def _perdida(tarea: Tarea, salida, objetivo):
@@ -132,7 +134,7 @@ def cargar_modelo(ruta: str | Path):
     return modelo
 
 
-def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = Config()) -> Corrida:
+def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = Config(), devolver_modelo: bool = False):
     """Entrena una red con la pieza sobre la tarea (Adam) y la mide en prueba.
 
     - Con ``lote`` entrena por lotes (necesario en conjuntos grandes); si no, todo junto.
@@ -155,6 +157,8 @@ def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = 
 
     torch.manual_seed(semilla)
     modelo = crear_modelo(PIEZAS[pieza], t, config.arquitectura, config.ocultas).to(disp)
+    if disp.type == "cuda":
+        torch.cuda.reset_peak_memory_stats(disp)
     opt = torch.optim.Adam(modelo.parameters(), lr=config.lr)
     epocas = config.epocas or t.epocas
     lote = config.lote or t.lote
@@ -217,9 +221,24 @@ def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = 
                     "pesos": {k: v.cpu() for k, v in modelo.state_dict().items()},
                     "extra": _estado_extra(modelo), "valor_prueba": valor}, ruta)
         detalle["modelo"] = str(ruta)
-    return Corrida(pieza, t.nombre, semilla, t.metrica, valor, perdida, contar_parametros(modelo),
-                   round(time.perf_counter() - inicio, 3), fallo, valor_entreno, config.arquitectura,
-                   {k: v for k, v in detalle.items() if v})
+    segundos = round(time.perf_counter() - inicio, 3)
+    medidas = {}
+    if config.medir and not fallo:
+        from .medicion import medir_hardware, medir_internas
+
+        if disp.type == "cuda":
+            medidas["vram_pico_mb"] = round(torch.cuda.max_memory_allocated(disp) / 2**20, 2)
+        tokens = float((x_prueba != 0).sum(1).float().mean()) if x_prueba.dtype == torch.int64 else None
+        medidas.update(medir_hardware(modelo, x_prueba, tokens))
+        medidas.update(medir_internas(modelo, x_prueba, y_prueba, lambda s_, o_: _perdida(t, s_, o_)))
+        if t.mayor_es_mejor and valor == valor:
+            medidas["eficiencia"] = round(valor / (contar_parametros(modelo) / 1e6), 3)
+    corrida = Corrida(pieza, t.nombre, semilla, t.metrica, valor, perdida, contar_parametros(modelo),
+                      segundos, fallo, valor_entreno, config.arquitectura,
+                      {k: v for k, v in detalle.items() if v}, medidas)
+    if devolver_modelo:
+        return corrida, (modelo, x_prueba)
+    return corrida
 
 
 class Registro:
@@ -239,9 +258,17 @@ class Registro:
             return [Corrida(**json.loads(linea)) for linea in f if linea.strip()]
 
 
-def correr(pieza: str, tarea: str, semillas=None, config: Config | None = None, registro: Registro | None = None) -> list[Corrida]:
+def correr(pieza: str, tarea: str, semillas=None, config: Config | None = None, registro: Registro | None = None,
+           modelos: dict | None = None) -> list[Corrida]:
+    """Entrena con cada semilla. Si se pasa ``modelos`` (un dict), guarda ahí {semilla: (modelo, x_prueba)}."""
     config = config or EVALUACIONES.get(f"{pieza}/{tarea}", Config())
-    corridas = [entrenar_una(pieza, tarea, s, config) for s in (semillas or config.semillas)]
+    corridas = []
+    for s in semillas or config.semillas:
+        if modelos is None:
+            corridas.append(entrenar_una(pieza, tarea, s, config))
+        else:
+            c, modelos[s] = entrenar_una(pieza, tarea, s, config, devolver_modelo=True)
+            corridas.append(c)
     if registro:
         for c in corridas:
             registro.guardar(c)
