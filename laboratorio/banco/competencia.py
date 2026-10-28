@@ -48,7 +48,8 @@ class Fila:
 NOMBRES = {"densa": "Red densa", "cnn": "CNN", "texto_cnn": "TextCNN", "transformer": "Transformer",
            "serie_cnn": "CNN 1D", "lstm": "LSTM", "fasttext": "fastText",
            "atencion_binaria_rl": "Tu atención binaria con RL", "atencion_niveles_rl": "Tu atención por niveles con RL",
-           "atencion_hebbiana": "Tu atención hebbiana", "cnn_densa_entrada": "Tu CNN con entrada densa"}
+           "atencion_hebbiana": "Tu atención hebbiana", "cnn_densa_entrada": "Tu CNN con entrada densa",
+           "cnn_decorrelada": "Tu CNN auto-decorrelada", "rcf_recurrente": "Tu celda recurrente RCF"}
 
 
 def _promedio_medidas(corridas: list[Corrida]) -> dict:

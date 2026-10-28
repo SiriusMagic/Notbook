@@ -68,6 +68,42 @@ class ExtractorCNN(nn.Module):
         return self.red(x.view(-1, *self.forma)).flatten(1)
 
 
+class ExtractorCNNDecorrelada(ExtractorCNN):
+    """Tu CNN auto-decorrelada (cuaderno 04, AODC-NN): la CNN normal, más una pérdida que castiga que los mapas
+    de una misma convolución se parezcan (covarianza entre filtros sobre los píxeles de cada imagen, λ = 1e-4 por
+    capa, como en el cuaderno), medida sobre los mapas ya activados. Pasada de TensorFlow a PyTorch; mismos bloques que la CNN normal para que la
+    única diferencia sea la pérdida.
+    """
+
+    def __init__(self, pieza: Pieza, forma: tuple[int, int, int], lambda_: float = 1e-4) -> None:
+        super().__init__(pieza, forma)
+        self.lambda_ = lambda_
+        self.mapas: list[torch.Tensor] = []
+        # Se mide después de BatchNorm y de la activación (en el cuaderno la convolución ya traía la ReLU).
+        # Medirlo antes de BatchNorm dejaría «hacer trampa»: achicar los pesos baja la covarianza y BatchNorm
+        # devuelve la misma escala, sin que los mapas que siguen queden menos parecidos.
+        modulos = list(self.red)
+        for anterior, m in zip(modulos, modulos[1:]):
+            if isinstance(anterior, nn.BatchNorm2d):
+                m.register_forward_hook(lambda _m, _i, out: self.mapas.append(out) if self.training else None)
+
+    def forward(self, x):
+        self.mapas = []
+        return super().forward(x)
+
+    def perdida_extra(self, salida, objetivo):
+        total = salida.new_zeros(())
+        for mapa in self.mapas:
+            b, c, h, w = mapa.shape
+            if c < 2 or h * w < 2:
+                continue
+            f = mapa.flatten(2)  # [b, c, h·w]
+            f = f - f.mean(2, keepdim=True)
+            cov = f @ f.transpose(1, 2) / (h * w - 1)  # [b, c, c]
+            total = total + (cov - torch.diag_embed(torch.diagonal(cov, dim1=1, dim2=2))).pow(2).sum((1, 2)).mean()
+        return self.lambda_ * total
+
+
 class ExtractorCNNDensaEntrada(nn.Module):
     """Tu CNN con entrada densa (cuaderno 02, «CNNDenseConcatenatedInput»): cada convolución recibe la salida
     de todas las anteriores **y la imagen original** (como DenseNet, más la entrada). Canales 16, 32, 64 y dos
@@ -327,6 +363,32 @@ class ExtractorLSTM(nn.Module):
         return h[-1]
 
 
+class ExtractorRCF(nn.Module):
+    """Tu celda recurrente de fusión recíproca (cuaderno 04, RCF-NN recurrente): en cada paso, H1 recibe la
+    entrada, su estado y el de H2; H2 recibe la entrada, el H1 nuevo y su estado. Se queda con H1 y H2 finales.
+    Pasada de TensorFlow a PyTorch. Si la pieza es una activación, reemplaza a ReLU.
+    """
+
+    def __init__(self, pieza: Pieza, unidades: int = 32) -> None:
+        super().__init__()
+        u = unidades
+        self.h1_entrada, self.h1_h1, self.h1_h2 = nn.Linear(1, u), nn.Linear(u, u), nn.Linear(u, u)
+        self.h2_entrada, self.h2_h1, self.h2_h2 = nn.Linear(1, u), nn.Linear(u, u), nn.Linear(u, u)
+        self.final1, self.final2 = nn.Linear(3 * u, u), nn.Linear(3 * u, u)
+        self.act = _act(pieza, u)
+        self.unidades = u
+        self.rasgos = 2 * u
+
+    def forward(self, x):
+        a = self.act
+        h1 = h2 = x.new_zeros(len(x), self.unidades)
+        for t in range(x.shape[1]):
+            xt = x[:, t : t + 1]
+            h1 = a(self.final1(torch.cat([a(self.h1_entrada(xt)), a(self.h1_h1(h1)), a(self.h1_h2(h2))], 1)))
+            h2 = a(self.final2(torch.cat([a(self.h2_entrada(xt)), a(self.h2_h1(h1)), a(self.h2_h2(h2))], 1)))
+        return torch.cat([h1, h2], 1)
+
+
 @dataclass(frozen=True)
 class Arquitectura:
     nombre: str
@@ -343,6 +405,8 @@ ARQUITECTURAS: dict[str, Arquitectura] = {a.nombre: a for a in [
                  lambda p, t: ExtractorCNN(p, t.forma)),
     Arquitectura("cnn_densa_entrada", "tu CNN donde cada capa recibe las anteriores y la imagen (cuaderno 02)",
                  ("imagen",), "plano", lambda p, t: ExtractorCNNDensaEntrada(p, t.forma)),
+    Arquitectura("cnn_decorrelada", "tu CNN auto-decorrelada: castiga filtros parecidos (cuaderno 04, AODC)",
+                 ("imagen",), "plano", lambda p, t: ExtractorCNNDecorrelada(p, t.forma)),
     Arquitectura("texto_cnn", "TextCNN: embeddings + convolución 1D", ("texto",), "ids",
                  lambda p, t: ExtractorTextoCNN(p, t.vocabulario)),
     Arquitectura("transformer", "Transformer pequeño (2 capas, 4 cabezas de atención)", ("texto",), "ids",
@@ -367,6 +431,8 @@ ARQUITECTURAS: dict[str, Arquitectura] = {a.nombre: a for a in [
                  lambda p, t: ExtractorSerieCNN(p, t.entradas)),
     Arquitectura("lstm", "LSTM clásica de 64 unidades", ("serie",), "plano",
                  lambda p, t: ExtractorLSTM(p)),
+    Arquitectura("rcf_recurrente", "tu celda recurrente con H1 y H2 acoplados (cuaderno 04, RCF-NN)", ("serie",),
+                 "plano", lambda p, t: ExtractorRCF(p)),
 ]}
 
 # Para cada tipo de dato, contra qué tecnología normal compite cada pieza.
@@ -375,7 +441,7 @@ NATURALES = {"tabla": ("densa",), "imagen": ("cnn",), "texto": ("texto_cnn", "tr
 
 # Arquitecturas que son ideas de tus cuadernos: compiten contra la mejor arquitectura normal de su tipo de dato.
 INVESTIGACION = {"texto": ("atencion_binaria_rl", "atencion_niveles_rl", "atencion_hebbiana"),
-                 "imagen": ("cnn_densa_entrada",)}
+                 "imagen": ("cnn_densa_entrada", "cnn_decorrelada"), "serie": ("rcf_recurrente",)}
 
 
 def _inicio(tarea) -> torch.Tensor:

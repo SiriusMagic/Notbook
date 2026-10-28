@@ -286,6 +286,31 @@ Limpieza del cuaderno 03 (de 86 a 28 celdas):
 - Se borró el corrector GNN repetido del cuaderno 01 (ya está en el banco).
 - Se borraron versiones viejas de las neuronas flotantes, del árbol fonológico y de las redes genéticas, y celdas sueltas.
 
+## Cuaderno 04: visión (decorrelación y «papelito preguntón»)
+
+En `piezas_04.py` y `arquitecturas.py`. El cuaderno estaba en TensorFlow; se pasó a PyTorch con el mismo cálculo.
+
+| Pieza o arquitectura | Qué es | De dónde |
+|---|---|---|
+| `decorrelacion` | castiga que las neuronas de una capa se parezcan entre sí (como DeCov, 2016) | 04 · AODC-NN |
+| arquitectura `cnn_decorrelada` | la CNN normal más ese castigo entre filtros de cada convolución (λ = 1e-4) | 04 · AODC-NN |
+| `papelito_pregunton` | H1 extrae, H2 ve a H1, H1 se reajusta viendo a H2; se castiga que se parezcan (coseno²) | 04 · ODFE-NN y RDCR-NN |
+| `papelito_covarianza` | igual, castigando la covarianza cruzada | 04 · NIDI-NN |
+| `fusion_reciproca` | la misma interacción, sin castigo | 04 · RCF-NN |
+| arquitectura `rcf_recurrente` | celda recurrente con H1 y H2 acoplados en cada paso, contra la LSTM | 04 · RCF-NN recurrente |
+
+### Resultados
+
+Informe completo: [`resultados-04.md`](resultados-04.md). Son 24 comparaciones: 🟢 0, ⚪ 22, 🔴 2.
+
+- **Decorrelación** en capa densa: empata en las 6 tareas.
+- **Papelito preguntón** (las tres versiones): empata en casi todo y pierde en círculos (79-80 % contra 85 %). Usa 5 veces más parámetros y **memoriza**: acierta 88-89 % al entrenar en círculos.
+- **CNN auto-decorrelada** contra la CNN normal (dígitos, 5 semillas): **empate**, 97,9 % contra 98,4 % (p = 0,14). Una primera versión medía la covarianza antes de BatchNorm y salía peor (97,1 %): la red podía bajar la pérdida achicando pesos sin decorrelacionar de verdad (lo encontró Codex). Ahora se mide después de la activación, como en el cuaderno.
+- **Celda recurrente RCF** contra la LSTM (serie de seno): **peor**, 0,0282 contra 0,0256 (p = 0,01). Contra la CNN 1D, empate.
+- Falta probar las dos arquitecturas con MNIST, CIFAR-10 y series reales (con GPU): `--competencia --tipo imagen` y `--tipo serie`.
+
+Limpieza del cuaderno 04 (de 58 a 46 celdas): se unieron las versiones de AODC (2), del papelito preguntón (RDCR ×3, NIDI y ODFE) y de RCF (3). Se quitó una celda que repetía la «densa de entrada» del cuaderno 02. La parte generativa (tripletas, interpolación de video, GAN) se mide al final, junto con los demás generativos.
+
 **Agregar una idea nueva**: escribe la capa como `nn.Module(entradas, salidas)` y añádela a `PIEZAS` en `piezas.py` (o en `piezas_02.py`). Si tiene una regla que se aplica después de cada paso (como las mutaciones de SMA o las memorias), ponle un método `despues_del_paso(perdida, error, epoca)`. Si la idea es la forma de conectar las capas, usa `red=lambda entradas, salidas, ocultas: TuRed(...)`.
 
 ## Primeros resultados
