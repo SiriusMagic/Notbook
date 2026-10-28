@@ -119,6 +119,28 @@ def digitos() -> Tarea:
                   dato="imagen", forma=(1, 8, 8))
 
 
+def caotica_20d(n: int = 4000, ruido: float = 0.8) -> Tarea:
+    """La tarea «caótica 20D» del cuaderno 08: 4 clases definidas por reglas enredadas sobre 20 números, y después
+    de etiquetar se ensucian algunas columnas (exponencial, normal, Poisson y uniforme), igual que en el cuaderno.
+    El cuaderno usaba 20 000 ejemplos; aquí 4 000 para que corra en CPU."""
+    rng = np.random.default_rng(SEMILLA_DATOS)
+    x = rng.random((n, 20)) * 10 - 5
+    p = x.copy()
+    clase0 = ((p[:, 0] > 2) & (p[:, 3] < -1) & (p[:, 7] > 3)) | ((p[:, 1] < -3) & (p[:, 5] > 4)) | \
+             ((np.abs(p[:, 9]) < 0.5) & (p[:, 12] > 2) & (p[:, 18] < -2))
+    clase1 = ((p[:, 2] > 1) & (p[:, 4] < -0.5)) | ((p[:, 6] < -2) & (p[:, 8] > 1.5) & (p[:, 10:13].sum(1) > 5))
+    clase2 = ((p[:, 10] > 0) & (p[:, 11] < 0) & (p[:, 13] > 0) & (p[:, 14] < 0)) | \
+             ((np.sin(p[:, 15]) * np.cos(p[:, 16]) > 0.5) & (p[:, 17] < 1))
+    y = np.select([clase0, clase1, clase2], [0, 1, 2], default=3)
+    signo = lambda: rng.choice([-1, 1], n)  # noqa: E731
+    x[:, 0] += rng.exponential(ruido * 0.1, n) * signo()
+    x[:, 1] += rng.normal(0, ruido * 0.05, n)
+    x[:, 5] += rng.poisson(ruido * 0.5, n) * signo()
+    x[:, 19] += rng.uniform(-ruido, ruido, n)
+    return _armar("caotica_20d", "clasificacion", x, y, 300,
+                  "4 clases por reglas enredadas en 20 dimensiones, con ruido (cuaderno 08)")
+
+
 TAREAS = {
     "regresion_cubica": regresion_cubica,
     "circulos": circulos,
@@ -126,6 +148,7 @@ TAREAS = {
     "xor": xor,
     "serie_seno": serie_seno,
     "digitos": digitos,
+    "caotica_20d": caotica_20d,
 }
 
 _cache: dict[tuple[str, str], Tarea] = {}
