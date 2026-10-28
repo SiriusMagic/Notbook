@@ -189,8 +189,10 @@ def test_competencia_incluye_tus_arquitecturas():
     ev.cargar_tarea = elegir
     try:
         filas = competir(["falsa"], [], {"semillas": (0, 1), "epocas": 3, "lote": 16}, aviso=lambda *_: None)
+        texto = informe_competencia(filas, "2")
     finally:
         competencia.cargar_tarea, ev.cargar_tarea = original, original_ev
     inv = [f for f in filas if f.investigacion]
     assert {f.arquitectura for f in inv} == {"atencion_binaria_rl", "atencion_niveles_rl", "atencion_hebbiana"}
-    assert all(f.comparacion is not None for f in inv)
+    assert all(set(f.contra_normales) == {"texto_cnn", "transformer", "fasttext"} for f in inv)
+    assert "vs fastText" in texto and "vs TextCNN" in texto

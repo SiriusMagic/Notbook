@@ -41,7 +41,8 @@ class Fila:
     comparacion: Comparacion | None  # contra la misma arquitectura con la pieza estándar
     medidas: dict = field(default_factory=dict)  # promedio entre semillas (latencia, memoria, muertas…)
     cka: dict = field(default_factory=dict)  # parecido interno con la versión normal (misma semilla)
-    investigacion: bool = False  # la arquitectura entera es una idea tuya (compite contra la mejor normal)
+    investigacion: bool = False  # la arquitectura entera es una idea tuya (compite contra cada arquitectura normal)
+    contra_normales: dict = field(default_factory=dict)  # tus arquitecturas: {arquitectura normal: Comparacion}
 
 
 NOMBRES = {"densa": "Red densa", "cnn": "CNN", "texto_cnn": "TextCNN", "transformer": "Transformer",
@@ -121,18 +122,19 @@ def competir(tareas: list[str], piezas: list[str], cambios: dict | None = None,
         # Tus arquitecturas (p. ej. los agentes de atención): contra la mejor arquitectura normal de esta tarea.
         investigacion = [a for a in INVESTIGACION.get(t.dato, ()) if a not in arqs]
         if investigacion and bases_tarea:
-            mayor = t.mayor_es_mejor
+            # Contra CADA arquitectura normal (no solo «la mejor»: elegirla mirando la prueba sesgaría el veredicto).
             normales = {a: c for a, c in bases_tarea.items() if a != "densa"} or bases_tarea
-            mejor_arq = max(normales, key=lambda a: (1 if mayor else -1) * _resumen(normales[a])[0])
             for arq in investigacion:
                 cfg = replace(EVALUACIONES.get(f"estandar/{nombre}", Config()), **(cambios or {}), arquitectura=arq)
                 corr = correr("estandar", nombre, config=cfg, registro=registro)
-                cmp = comparar(corr, normales[mejor_arq])
+                contra = {a: comparar(corr, b) for a, b in normales.items()}
                 m, s = _resumen(corr)
                 filas.append(Fila(nombre, arq, "estandar", corr[0].metrica, m, s, corr[0].parametros,
-                                  mean(c.segundos for c in corr), cmp, _promedio_medidas(corr), {}, True))
-                aviso(f"{nombre:14} {_nombre('estandar', arq):28} {m:.4f}  {cmp.veredicto} (vs {NOMBRES.get(mejor_arq)})")
+                                  mean(c.segundos for c in corr), None, _promedio_medidas(corr), {}, True, contra))
+                resumen = ", ".join(f"{NOMBRES.get(a, a)}: {c.veredicto}" for a, c in contra.items())
+                aviso(f"{nombre:14} {_nombre('estandar', arq):28} {m:.4f}  ({resumen})")
     comparaciones = [f.comparacion for f in filas if f.comparacion is not None]
+    comparaciones += [c for f in filas for c in f.contra_normales.values()]
     if len(comparaciones) > 1:
         ajustar_multiples(comparaciones)
     return filas
@@ -179,11 +181,13 @@ def resumen_por_tipo(filas: list[Fila]) -> dict[str, dict[str, Counter]]:
     """Para cada pieza y tipo de dato: cuántas veces mejora, iguala o empeora su arquitectura."""
     mapa: dict[str, dict[str, Counter]] = {}
     for f in filas:
-        if f.comparacion is None:
+        comps = list(f.contra_normales.values()) or ([f.comparacion] if f.comparacion is not None else [])
+        if not comps:
             continue
         tipo = cargar_tarea(f.tarea).dato
         clave = NOMBRES.get(f.arquitectura, f.arquitectura) if f.investigacion else f.pieza
-        mapa.setdefault(clave, {}).setdefault(tipo, Counter())[f.comparacion.veredicto] += 1
+        for c in comps:
+            mapa.setdefault(clave, {}).setdefault(tipo, Counter())[c.veredicto] += 1
     return mapa
 
 
@@ -231,7 +235,7 @@ def informe_competencia(filas: list[Fila], semillas: str) -> str:
         "las representaciones internas a las de la red normal (1 = iguales). Compáralo con el CKA de la red normal "
         "contra sí misma: eso es lo que cambia solo por azar.",
         "- **Tus arquitecturas** (por ejemplo «Tu atención binaria con RL») se comparan, en esa misma columna, "
-        "contra la **mejor arquitectura normal** de la tarea.",
+        "contra **cada** arquitectura normal de la tarea (todas entran en la corrección por comparaciones múltiples).",
         "- **¿Mejora su arquitectura?**: compara la pieza con la misma arquitectura usando ReLU. Usa una prueba t "
         "pareada con corrección por comparaciones múltiples. 🟢 mejora, ⚪ igual, 🔴 empeora.",
         "",
@@ -259,7 +263,10 @@ def informe_competencia(filas: list[Fila], semillas: str) -> str:
                     vs = f"{f.media / ref.media:.1f}× más error"
                 else:
                     vs = f"{d:+.1f} %"
-            ver = "—" if f.comparacion is None else _ICONO[f.comparacion.veredicto] + " " + f.comparacion.veredicto
+            if f.contra_normales:
+                ver = " · ".join(f"vs {NOMBRES.get(a, a)} {_ICONO[c.veredicto]}" for a, c in f.contra_normales.items())
+            else:
+                ver = "—" if f.comparacion is None else _ICONO[f.comparacion.veredicto] + " " + f.comparacion.veredicto
             efi = f"{f.media * 100 / (f.parametros / 1e6):,.0f}" if mayor and not math.isnan(f.media) else "—"
             lineas.append(f"| {i} | {_nombre(f.pieza, f.arquitectura)} | {_fmt(f.metrica, f.media, f.std)} | {vs} | "
                           f"{ver} | {f.parametros:,} | {efi} | {f.segundos:.1f} |")
@@ -281,6 +288,10 @@ def informe_competencia(filas: list[Fila], semillas: str) -> str:
         lineas += [f"- **{f.pieza}** en {_nombre('estandar', f.arquitectura).replace(' normal', '')} ({f.tarea})" for f in mejoras]
     else:
         lineas.append("Ninguna pieza mejora de forma clara su arquitectura en estas tareas.")
+    for f in filas:
+        ganadas = [NOMBRES.get(a, a) for a, c in f.contra_normales.items() if c.veredicto == "mejor"]
+        if ganadas:
+            lineas.append(f"- **{_nombre('estandar', f.arquitectura)}** le gana a {', '.join(ganadas)} ({f.tarea})")
     lineas += ["", "Una 🟢 es una pista para invertir más tiempo (más semillas, más datos), no una prueba definitiva."]
     return "\n".join(lineas) + "\n"
 
