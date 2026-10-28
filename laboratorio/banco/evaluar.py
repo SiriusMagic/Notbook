@@ -80,6 +80,17 @@ def _perdida(tarea: Tarea, salida, objetivo):
     return F.mse_loss(salida, objetivo)
 
 
+def _perdida_en_evaluacion(tarea: Tarea, modelo, x, objetivo) -> float:
+    """Pérdida del modelo entero en modo evaluación (sin dropout ni estadísticas de lote), sin gradiente."""
+    estaba = modelo.training
+    modelo.eval()
+    try:
+        with torch.no_grad():
+            return float(_perdida(tarea, modelo(x), objetivo))
+    finally:
+        modelo.train(estaba)
+
+
 def _error(tarea: Tarea, salida, objetivo):
     if tarea.tipo == "clasificacion":
         return F.softmax(salida, dim=1) - F.one_hot(objetivo, tarea.salidas).float()
@@ -187,7 +198,8 @@ def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = 
             loss.backward()
             opt.step()
             perdida = loss.item()
-            modelo.despues_del_paso(perdida=perdida, error=_error(t, salida.detach(), yb), epoca=epoca)
+            modelo.despues_del_paso(perdida=perdida, error=_error(t, salida.detach(), yb), epoca=epoca,
+                                    perdida_de=lambda: _perdida_en_evaluacion(t, modelo, xb, yb))  # p. ej. GMO
         if fallo:
             break
         if config.paciencia:
@@ -211,7 +223,8 @@ def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = 
         salida = _predecir(modelo, x_prueba)
         valor = _medir(t, salida, y_prueba) if not fallo and torch.isfinite(salida).all() else math.nan
     fallo = fallo or math.isnan(valor)
-    detalle = {"mutaciones": sum(getattr(m, "mutaciones", 0) for m in modelo.modules() if m is not modelo)}
+    detalle = {"mutaciones": sum(getattr(m, "mutaciones", 0) for m in modelo.modules() if m is not modelo),
+               "consolidados": sum(getattr(m, "consolidados", 0) for m in modelo.modules() if m is not modelo)}
     if config.paciencia:
         detalle.update(epocas_entrenadas=epoca + 1, mejor_epoca=mejor_epoca + 1, validacion=round(signo * mejor, 6))
     if config.guardar and not fallo:

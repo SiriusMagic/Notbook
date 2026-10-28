@@ -187,6 +187,68 @@ Informe completo: [`resultados-02-memorias.md`](resultados-02-memorias.md). Son 
 - De la industria, solo **GELU** gana, y solo en la serie de seno (≈ 8 % menos error). Las demás empatan con ReLU en estas tareas pequeñas.
 - **Conclusión para invertir**: en tareas pequeñas nada de esta tanda justifica más tiempo. Si quieres darles otra oportunidad, la prueba siguiente es con datos reales (`--competencia --grupo tuyas`), donde una memoria podría ayudar con datos ruidosos.
 
+## Piezas (tercera tanda: cuaderno 02, segunda parte)
+
+En `piezas_02b.py`.
+
+| Pieza | Qué es | De dónde |
+|---|---|---|
+| `dropout` | lineal + ReLU + Dropout 10 % | industria (rival de DMNA) |
+| `batchnorm`, `layernorm` | lineal + ReLU + normalización | industria (rivales de la CCN) |
+| `polinomica` | términos cuadráticos y potencias de cada entrada, mezcla ReLU/tanh | 02 · neurona polinómica (4 versiones unidas) |
+| `resonante` | sigmoide solo si supera un umbral de «fuerza»; si no, 0 | 02 · neurona resonante |
+| `dmna` | ruido al entrenar que depende de la pérdida y se apaga con el tiempo | 02 · DMNA |
+| `gmo` | mutación de todos los pesos, aceptada solo si mejora 1 % | 02 · GMO |
+| `cdm` | extractor que limpia la entrada antes de la red | 02 · CDM |
+| `hiper_relu` | ReLU que multiplica ×10 lo que pasa el umbral | 02 · CCN |
+| `norma_caos` | normalización con «turbulencia» aprendida | 02 · CCN |
+| `ccn` | la Red de Caos Controlado completa (las dos anteriores juntas) | 02 · CCN |
+
+Arreglos (anotados en el código):
+- **Polinómica**: se unieron las cuatro versiones. Se quitó el «estado», que no dependía de la entrada (era un bias más). Con muchas entradas los términos cuadráticos usan una forma de rango 16, porque la matriz completa no cabe.
+- **Resonante**: en el cuaderno se entrenaba con mutaciones al azar; aquí, con gradiente. El método de mutación se comparará con los optimizadores en el cuaderno 08.
+- **CDM**: el extractor se entrenaba con la entrada *sin ruido verdadera*, un dato que no existe en la vida real y que la red estándar no recibía. Ahora aprende como autoencoder de limpieza.
+- **CCN**: al evaluar usaba otra escala que al entrenar, y sus estadísticas casi no se actualizaban (decaimiento 0,999). Ahora usa la misma fórmula y 0,9, como BatchNorm.
+- **GMO**: compara la pérdida del **mismo lote** antes y después de mutar, con el modelo entero en modo evaluación (el banco le pasa `perdida_de`). El cuaderno usaba variables globales y comparaba con la mejor pérdida vista, que con lotes de distinta dificultad no sirve.
+
+### Resultados de la tercera tanda
+
+Informe completo: [`resultados-02-parte2.md`](resultados-02-parte2.md). Son 11 piezas en 6 tareas, con 5 semillas: 66 comparaciones. Resultado: 🟢 0, ⚪ 54, 🔴 12.
+
+- **Ninguna gana** a la red estándar.
+- **Polinómica**: peor en círculos, serie y dígitos. **Memoriza**: en círculos acierta 93 % al entrenar y 79 % en la prueba, y en dígitos usa 167 000 parámetros contra 3 466. En el cuaderno sí llega al 98 % en círculos con 5 neuronas, porque ese círculo tiene menos ruido y la forma x² + y² es justo un polinomio.
+- **Resonante**: mucho peor en regresión (100 veces más error) y en dígitos. El umbral apaga la neurona y entonces no aprende.
+- **HiperReLU**: peor en 4 tareas. Multiplicar ×10 desestabiliza el aprendizaje.
+- **DMNA, GMO y CDM empatan.** GMO no aceptó ninguna mutación en 30 corridas: un ruido al azar en todos los pesos casi nunca mejora 1 % el mismo lote, así que queda igual a la red estándar.
+- **Normalización con turbulencia** pierde en círculos, igual que **BatchNorm**: en redes tan pequeñas, normalizar estorba. LayerNorm empata.
+- **Dropout** (industria) también sale peor en regresión cúbica: con tan pocos datos, el ruido estorba.
+
+## Piezas (cuarta tanda: cuaderno 02, última parte)
+
+En `piezas_02c.py`, y la CNN en `arquitecturas.py`.
+
+| Pieza | Qué es | De dónde |
+|---|---|---|
+| `dendritica` | dos dendritas por neurona (ReLU y exponencial suave) y soma sigmoide | 02 · neurona dendrítica (NumPy) |
+| `synaptic_tagging` | etiqueta los pesos con gradiente fuerte y los refuerza cada 10 pasos | 02 · synaptic tagging |
+| `estado_interno` | tanh con un estado inicial aprendido | 02 · estado interno (TensorFlow) |
+| `ruteo_adaptativo` | compuerta que reparte entre una ruta de «éxito» y una de «reevaluación» (RARC, una mezcla de expertos) | 02 · ruteo adaptativo (TensorFlow) |
+| arquitectura `cnn_densa_entrada` | CNN donde cada capa recibe las anteriores y la imagen original | 02 · CNN con entrada densa |
+
+Arreglos (anotados en el código):
+- **Dendrítica**: era una sola neurona en NumPy con el gradiente calculado a mano. Ahora es una capa de PyTorch con el mismo cálculo. Usa el inicio de `nn.Linear`.
+- **Estado interno** y **ruteo**: se pasaron de TensorFlow a PyTorch. El «estado» se crea de nuevo en cada llamada, así que no recuerda nada: la capa equivale a una tanh con un sesgo extra.
+- **CNN con entrada densa**: en el cuaderno reconstruía MNIST (autoencoder). Aquí clasifica, igual que la CNN normal con la que compite.
+
+### Resultados de la cuarta tanda
+
+Informe completo: [`resultados-02-parte3.md`](resultados-02-parte3.md). Son 4 piezas en 6 tareas, con 5 semillas: 24 comparaciones. Resultado: 🟢 2, ⚪ 18, 🔴 4.
+
+- **Synaptic tagging** y **estado interno** ganan en la serie de seno (≈ 6 % menos error). Pero la **tanh sola** da lo mismo (0,0243): la mejora viene de la tanh, no de la idea. Synaptic tagging también sale peor en XOR.
+- **Dendrítica**: peor en regresión, serie y dígitos.
+- **Ruteo adaptativo** empata en todo.
+- **CNN con entrada densa** contra la CNN normal (dígitos 8×8, 5 semillas): 97,7 % contra 98,4 %, empate (p = 0,11), con 50 % más parámetros. Falta probarla en MNIST y CIFAR-10 con GPU (`--competencia --tipo imagen`).
+
 **Agregar una idea nueva**: escribe la capa como `nn.Module(entradas, salidas)` y añádela a `PIEZAS` en `piezas.py` (o en `piezas_02.py`). Si tiene una regla que se aplica después de cada paso (como las mutaciones de SMA o las memorias), ponle un método `despues_del_paso(perdida, error, epoca)`. Si la idea es la forma de conectar las capas, usa `red=lambda entradas, salidas, ocultas: TuRed(...)`.
 
 ## Primeros resultados

@@ -321,15 +321,28 @@ class Red(nn.Module):
 
     def despues_del_paso(self, **contexto) -> None:
         """Le avisa a las piezas que tienen reglas propias (umbral dinámico, mutaciones, memorias)."""
-        for m in (getattr(self, "capa1", None), getattr(self, "capa2", None)):
+        for m in (getattr(self, "capa1", None), getattr(self, "capa2", None), getattr(self, "topologia", None)):
             if hasattr(m, "despues_del_paso"):
                 m.despues_del_paso(**contexto)
+
+    def perdida_extra(self, salida, objetivo):
+        """Pérdida adicional de las piezas que la tienen (p. ej. el extractor de CDM); si no, 0."""
+        total = salida.new_zeros(())
+        for m in (getattr(self, "capa1", None), getattr(self, "capa2", None), getattr(self, "topologia", None)):
+            if hasattr(m, "perdida_extra"):
+                total = total + m.perdida_extra(salida, objetivo)
+        return total
 
 
 # Tanda 2 del cuaderno 02 y sus rivales de la industria (en otro archivo para no alargar este).
 from .piezas_02 import piezas_02  # noqa: E402
 
+from .piezas_02b import piezas_02b  # noqa: E402
+from .piezas_02c import piezas_02c  # noqa: E402
+
 PIEZAS.update({p.nombre: p for p in piezas_02()})
+PIEZAS.update({p.nombre: p for p in piezas_02b()})
+PIEZAS.update({p.nombre: p for p in piezas_02c()})
 
 
 def contar_parametros(modelo: nn.Module) -> int:

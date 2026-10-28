@@ -44,9 +44,10 @@ class Modelo(nn.Module):
 
     def perdida_extra(self, salida, objetivo):
         """Pérdida adicional del extractor (p. ej. REINFORCE de los agentes de atención)."""
+        total = self.cabeza.perdida_extra(salida, objetivo)
         if hasattr(self.extractor, "perdida_extra"):
-            return self.extractor.perdida_extra(salida, objetivo)
-        return salida.new_zeros(())
+            total = total + self.extractor.perdida_extra(salida, objetivo)
+        return total
 
 
 class ExtractorCNN(nn.Module):
@@ -65,6 +66,35 @@ class ExtractorCNN(nn.Module):
 
     def forward(self, x):
         return self.red(x.view(-1, *self.forma)).flatten(1)
+
+
+class ExtractorCNNDensaEntrada(nn.Module):
+    """Tu CNN con entrada densa (cuaderno 02, «CNNDenseConcatenatedInput»): cada convolución recibe la salida
+    de todas las anteriores **y la imagen original** (como DenseNet, más la entrada). Canales 16, 32, 64 y dos
+    max-pool al final, como en el cuaderno.
+
+    Arreglo: el cuaderno la usaba para reconstruir MNIST (autoencoder) y aquí se usa para clasificar, igual que
+    la CNN normal con la que compite. Si la pieza es una activación, reemplaza a ReLU.
+    """
+
+    def __init__(self, pieza: Pieza, forma: tuple[int, int, int], canales=(16, 32, 64)) -> None:
+        super().__init__()
+        self.forma = forma
+        c, h, w = forma
+        a, b, d = canales
+        self.conv1 = nn.Conv2d(c, a, 3, padding=1)
+        self.conv2 = nn.Conv2d(a + c, b, 3, padding=1)
+        self.conv3 = nn.Conv2d(a + b + c, d, 3, padding=1)
+        self.act1, self.act2, self.act3 = _act(pieza, a), _act(pieza, b), _act(pieza, d)
+        self.pool = nn.MaxPool2d(2)
+        self.rasgos = d * (h // 4) * (w // 4)
+
+    def forward(self, x):
+        x = x.view(-1, *self.forma)
+        h1 = self.act1(self.conv1(x))
+        h2 = self.act2(self.conv2(torch.cat([h1, x], 1)))
+        h3 = self.act3(self.conv3(torch.cat([h1, h2, x], 1)))
+        return self.pool(self.pool(h3)).flatten(1)
 
 
 class ExtractorTextoCNN(nn.Module):
@@ -311,6 +341,8 @@ ARQUITECTURAS: dict[str, Arquitectura] = {a.nombre: a for a in [
                  lambda p, t: None),
     Arquitectura("cnn", "CNN clásica de 2 bloques con BatchNorm", ("imagen",), "plano",
                  lambda p, t: ExtractorCNN(p, t.forma)),
+    Arquitectura("cnn_densa_entrada", "tu CNN donde cada capa recibe las anteriores y la imagen (cuaderno 02)",
+                 ("imagen",), "plano", lambda p, t: ExtractorCNNDensaEntrada(p, t.forma)),
     Arquitectura("texto_cnn", "TextCNN: embeddings + convolución 1D", ("texto",), "ids",
                  lambda p, t: ExtractorTextoCNN(p, t.vocabulario)),
     Arquitectura("transformer", "Transformer pequeño (2 capas, 4 cabezas de atención)", ("texto",), "ids",
@@ -342,7 +374,8 @@ NATURALES = {"tabla": ("densa",), "imagen": ("cnn",), "texto": ("texto_cnn", "tr
              "serie": ("serie_cnn", "lstm")}
 
 # Arquitecturas que son ideas de tus cuadernos: compiten contra la mejor arquitectura normal de su tipo de dato.
-INVESTIGACION = {"texto": ("atencion_binaria_rl", "atencion_niveles_rl", "atencion_hebbiana")}
+INVESTIGACION = {"texto": ("atencion_binaria_rl", "atencion_niveles_rl", "atencion_hebbiana"),
+                 "imagen": ("cnn_densa_entrada",)}
 
 
 def _inicio(tarea) -> torch.Tensor:
