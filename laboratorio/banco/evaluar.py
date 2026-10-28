@@ -178,6 +178,8 @@ def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = 
             xb, yb = (x_e, y_e) if parte is None else (x_e[parte], y_e[parte])
             salida = modelo(xb)
             loss = _perdida(t, salida, yb)
+            if hasattr(modelo, "perdida_extra"):  # p. ej. REINFORCE de los agentes de atención
+                loss = loss + modelo.perdida_extra(salida.detach(), yb)
             if not torch.isfinite(loss):
                 fallo = True  # la red «explotó»: cuenta como resultado malo, no como error del banco
                 break
@@ -231,6 +233,12 @@ def entrenar_una(pieza: str, tarea: str | Tarea, semilla: int, config: Config = 
         tokens = float((x_prueba != 0).sum(1).float().mean()) if x_prueba.dtype == torch.int64 else None
         medidas.update(medir_hardware(modelo, x_prueba, tokens))
         medidas.update(medir_internas(modelo, x_prueba, y_prueba, lambda s_, o_: _perdida(t, s_, o_)))
+        extractor = getattr(modelo, "extractor", None)
+        if extractor is not None and hasattr(extractor, "fraccion_atendida"):
+            modelo.eval()
+            with torch.no_grad():
+                modelo(x_prueba[:1000])
+            medidas["fraccion_atendida"] = round(extractor.fraccion_atendida, 4)
         if t.mayor_es_mejor and valor == valor:
             medidas["eficiencia"] = round(valor / (contar_parametros(modelo) / 1e6), 3)
     corrida = Corrida(pieza, t.nombre, semilla, t.metrica, valor, perdida, contar_parametros(modelo),

@@ -12,6 +12,8 @@ pip install -r laboratorio/requirements.txt && pytest   # pruebas de laboratorio
 python -m laboratorio.banco --todo --semillas 5          # banco de evaluación (~5 min en CPU) → resultados/informe.md
 python -m laboratorio.banco --reales --guardar modelos     # con MNIST, CIFAR-10, reseñas… de Hugging Face (parada temprana activada)
 python -m laboratorio.banco --competencia --rapido          # piezas contra CNN, TextCNN, Transformer, CNN 1D y LSTM (mejor con GPU)
+python -m laboratorio.banco --tokenizadores                 # cuaderno 01: sílabas contra BPE, Unigram y GPT-4o
+python -m laboratorio.banco --segmentadores                 # cuaderno 01: segmentadores de sílabas
 ```
 
 ## Reglas del dueño (aplican a todo cambio)

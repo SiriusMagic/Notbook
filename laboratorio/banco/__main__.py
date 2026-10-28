@@ -37,6 +37,10 @@ def main(argv=None) -> None:
     ap.add_argument("--reales", action="store_true", help="todas las piezas en las tareas reales de Hugging Face")
     ap.add_argument("--competencia", action="store_true",
                     help="tus piezas contra la tecnología normal (CNN, TextCNN, Transformer, CNN 1D, LSTM)")
+    ap.add_argument("--tokenizadores", action="store_true",
+                    help="cuaderno 01: tus sílabas contra BPE, Unigram y GPT-4o (con --tarea de texto; por defecto resenas_es)")
+    ap.add_argument("--segmentadores", action="store_true",
+                    help="cuaderno 01: segmentadores de sílabas (reglas, cuaderno, pyphen, BiLSTM, Transformer)")
     ap.add_argument("--tipo", action="append", choices=["imagen", "texto", "serie"], help="con --competencia: qué datos (se puede repetir)")
     ap.add_argument("--rapido", action="store_true", help="con --competencia: una tarea por tipo, 2 semillas y menos datos")
     ap.add_argument("--arquitectura", default="densa", choices=list(ARQUITECTURAS), help="arquitectura (sin --competencia)")
@@ -71,6 +75,26 @@ def main(argv=None) -> None:
     registro = Registro(a.salida)
     piezas = a.pieza or [p for p in PIEZAS if p != "estandar"]
     Path(a.salida).mkdir(parents=True, exist_ok=True)
+
+    if a.tokenizadores:
+        from .tokenizadores import competir_tokenizadores, informe_tokenizadores
+
+        r = competir_tokenizadores((a.tarea or ["resenas_es"])[0], cambios={k: v for k, v in cambios.items() if k != "guardar"})
+        ruta = Path(a.salida) / "tokenizadores.md"
+        ruta.write_text(informe_tokenizadores(r), encoding="utf-8")
+        print(f"\nInforme: {ruta}")
+        return
+
+    if a.segmentadores:
+        from .datos_reales import textos_reales
+        from .segmentadores import competir_segmentadores, informe_segmentadores, palabras_de
+
+        textos, _, _, _ = textos_reales("resenas_es")
+        r = competir_segmentadores(palabras_de(textos), semillas=tuple(range(a.semillas or 3)), dispositivo=a.dispositivo)
+        ruta = Path(a.salida) / "segmentadores.md"
+        ruta.write_text(informe_segmentadores(r), encoding="utf-8")
+        print(f"\nInforme: {ruta}")
+        return
 
     if a.competencia:
         from .competencia import competir, informe_competencia

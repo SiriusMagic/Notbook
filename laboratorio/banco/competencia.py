@@ -21,7 +21,9 @@ from collections import Counter
 from dataclasses import dataclass, field, replace
 from statistics import mean, stdev
 
-from .arquitecturas import ARQUITECTURAS, NATURALES
+from .arquitecturas import ARQUITECTURAS, INVESTIGACION, NATURALES
+
+INVESTIGACION_TODAS = {a for v in INVESTIGACION.values() for a in v}
 from .evaluar import EVALUACIONES, Comparacion, Config, Corrida, Registro, ajustar_multiples, comparar, correr
 from .tareas import cargar_tarea
 
@@ -39,10 +41,13 @@ class Fila:
     comparacion: Comparacion | None  # contra la misma arquitectura con la pieza estándar
     medidas: dict = field(default_factory=dict)  # promedio entre semillas (latencia, memoria, muertas…)
     cka: dict = field(default_factory=dict)  # parecido interno con la versión normal (misma semilla)
+    investigacion: bool = False  # la arquitectura entera es una idea tuya (compite contra la mejor normal)
 
 
 NOMBRES = {"densa": "Red densa", "cnn": "CNN", "texto_cnn": "TextCNN", "transformer": "Transformer",
-           "serie_cnn": "CNN 1D", "lstm": "LSTM"}
+           "serie_cnn": "CNN 1D", "lstm": "LSTM", "fasttext": "fastText",
+           "atencion_binaria_rl": "Tu atención binaria con RL", "atencion_niveles_rl": "Tu atención por niveles con RL",
+           "atencion_hebbiana": "Tu atención hebbiana"}
 
 
 def _promedio_medidas(corridas: list[Corrida]) -> dict:
@@ -68,6 +73,8 @@ def _cka_promedio(modelos_a: dict, modelos_b: dict, emparejar=lambda s, semillas
 
 def _nombre(pieza: str, arq: str) -> str:
     base = NOMBRES.get(arq, arq)
+    if arq in INVESTIGACION_TODAS:
+        return base if pieza == "estandar" else f"{pieza} en {base}"
     return f"{base} normal" if pieza == "estandar" else f"{pieza} en {base}"
 
 
@@ -85,6 +92,7 @@ def competir(tareas: list[str], piezas: list[str], cambios: dict | None = None,
     for nombre in tareas:
         t = cargar_tarea(nombre)
         arqs = ["densa", *[a for a in NATURALES.get(t.dato, ()) if a != "densa"]]
+        bases_tarea: dict = {}
         for arq in arqs:
             def config(pieza: str, arq=arq) -> Config:
                 c = EVALUACIONES.get(f"{pieza}/{nombre}", Config())
@@ -109,6 +117,21 @@ def competir(tareas: list[str], piezas: list[str], cambios: dict | None = None,
                                   _cka_promedio(modelos, modelos_base)))
                 del modelos
                 aviso(f"{nombre:14} {_nombre(pieza, arq):28} {m:.4f}  {cmp.veredicto}")
+            bases_tarea[arq] = base
+        # Tus arquitecturas (p. ej. los agentes de atención): contra la mejor arquitectura normal de esta tarea.
+        investigacion = [a for a in INVESTIGACION.get(t.dato, ()) if a not in arqs]
+        if investigacion and bases_tarea:
+            mayor = t.mayor_es_mejor
+            normales = {a: c for a, c in bases_tarea.items() if a != "densa"} or bases_tarea
+            mejor_arq = max(normales, key=lambda a: (1 if mayor else -1) * _resumen(normales[a])[0])
+            for arq in investigacion:
+                cfg = replace(EVALUACIONES.get(f"estandar/{nombre}", Config()), **(cambios or {}), arquitectura=arq)
+                corr = correr("estandar", nombre, config=cfg, registro=registro)
+                cmp = comparar(corr, normales[mejor_arq])
+                m, s = _resumen(corr)
+                filas.append(Fila(nombre, arq, "estandar", corr[0].metrica, m, s, corr[0].parametros,
+                                  mean(c.segundos for c in corr), cmp, _promedio_medidas(corr), {}, True))
+                aviso(f"{nombre:14} {_nombre('estandar', arq):28} {m:.4f}  {cmp.veredicto} (vs {NOMBRES.get(mejor_arq)})")
     comparaciones = [f.comparacion for f in filas if f.comparacion is not None]
     if len(comparaciones) > 1:
         ajustar_multiples(comparaciones)
@@ -139,7 +162,9 @@ def _fila_hardware(f: Fila) -> str:
     muertas_txt = f"{mean(muertas) * 100:.0f} %" if muertas else "—"
     grads = [m[f"{c}_grad"] for c in ("extractor", "capa1", "capa2") if f"{c}_grad" in m]
     grad_txt = f"{grads[0]:.2g} / {grads[-1]:.2g}" if len(grads) > 1 else "—"
-    if f.cka:
+    if "fraccion_atendida" in m:
+        cka_txt = f"lee el {m['fraccion_atendida'] * 100:.0f} % del texto"
+    elif f.cka:
         valor = mean(f.cka.values())
         cka_txt = f"{valor:.2f} (normal vs. normal por azar)" if f.pieza == "estandar" else f"{valor:.2f}"
     else:
@@ -157,7 +182,8 @@ def resumen_por_tipo(filas: list[Fila]) -> dict[str, dict[str, Counter]]:
         if f.comparacion is None:
             continue
         tipo = cargar_tarea(f.tarea).dato
-        mapa.setdefault(f.pieza, {}).setdefault(tipo, Counter())[f.comparacion.veredicto] += 1
+        clave = NOMBRES.get(f.arquitectura, f.arquitectura) if f.investigacion else f.pieza
+        mapa.setdefault(clave, {}).setdefault(tipo, Counter())[f.comparacion.veredicto] += 1
     return mapa
 
 
@@ -204,6 +230,8 @@ def informe_competencia(filas: list[Fila], semillas: str) -> str:
         "la última capa (si la primera es mucho menor, el aprendizaje no llega al inicio); CKA = cuánto se parecen "
         "las representaciones internas a las de la red normal (1 = iguales). Compáralo con el CKA de la red normal "
         "contra sí misma: eso es lo que cambia solo por azar.",
+        "- **Tus arquitecturas** (por ejemplo «Tu atención binaria con RL») se comparan, en esa misma columna, "
+        "contra la **mejor arquitectura normal** de la tarea.",
         "- **¿Mejora su arquitectura?**: compara la pieza con la misma arquitectura usando ReLU. Usa una prueba t "
         "pareada con corrección por comparaciones múltiples. 🟢 mejora, ⚪ igual, 🔴 empeora.",
         "",
