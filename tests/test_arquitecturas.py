@@ -137,3 +137,15 @@ def test_mapa_por_tipo_de_dato():
     assert "no sirve aquí" in _celda(mapa["ida"]["serie"])
     texto = informe_competencia(filas, "2")
     assert "¿en qué tipo de dato sirve cada pieza?" in texto and "| ida |" in texto
+
+
+def test_linea_de_comandos_filtra_tareas_por_arquitectura(tmp_path, capsys):
+    from laboratorio.banco.__main__ import main
+
+    main(["--arquitectura", "cnn", "--todo", "--pieza", "seno", "--semillas", "2", "--epocas", "2", "--salida", str(tmp_path)])
+    salida = capsys.readouterr().out
+    assert "se omiten 5 tareas" in salida
+    informe = (tmp_path / "informe.md").read_text(encoding="utf-8")
+    assert "| seno | digitos |" in informe and "circulos" not in informe
+    with pytest.raises(SystemExit):
+        main(["--arquitectura", "cnn", "--tarea", "circulos", "--salida", str(tmp_path)])

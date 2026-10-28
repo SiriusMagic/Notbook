@@ -20,6 +20,15 @@ from .piezas import PIEZAS
 from .tareas import TAREAS
 
 
+def _tipo_dato(tarea: str) -> str:
+    """Tipo de dato de una tarea sin descargar nada (las pequeñas se generan al instante)."""
+    if tarea in FUENTES:
+        return FUENTES[tarea].tipo
+    from .tareas import cargar_tarea
+
+    return cargar_tarea(tarea).dato
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(prog="python -m laboratorio.banco", description="Compara piezas de investigación con la red estándar.")
     ap.add_argument("--pieza", action="append", choices=[p for p in PIEZAS if p != "estandar"], help="se puede repetir")
@@ -83,6 +92,17 @@ def main(argv=None) -> None:
         tareas = a.tarea
     else:
         tareas = ([*TAREAS] if a.todo or not a.reales else []) + ([*FUENTES] if a.reales else [])
+    # Solo las tareas cuyo tipo de dato sirve para la arquitectura elegida (una CNN no sirve para texto).
+    datos = ARQUITECTURAS[a.arquitectura].datos
+    validas = [t for t in tareas if _tipo_dato(t) in datos]
+    if a.tarea and len(validas) < len(tareas):
+        malas = ", ".join(t for t in tareas if t not in validas)
+        ap.error(f"la arquitectura «{a.arquitectura}» no sirve para: {malas} (acepta datos de tipo {', '.join(datos)})")
+    if not validas:
+        ap.error(f"ninguna tarea elegida sirve para la arquitectura «{a.arquitectura}»")
+    if len(validas) < len(tareas):
+        print(f"Con «{a.arquitectura}» se omiten {len(tareas) - len(validas)} tareas que no son de tipo {', '.join(datos)}.")
+    tareas = validas
 
     def config_para(pieza: str, tarea: str) -> Config:
         return replace(EVALUACIONES.get(f"{pieza}/{tarea}", Config()), **cambios, arquitectura=a.arquitectura)
