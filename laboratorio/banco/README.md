@@ -48,6 +48,16 @@ Se copiaron casi tal cual. Lo que hubo que cambiar para que funcionaran dentro d
 
 **Agregar una idea nueva**: escribe la capa como `nn.Module(entradas, salidas)` y añádela a `PIEZAS` en `piezas.py`. Si tiene una regla que se aplica después de cada paso (como las mutaciones de SMA), ponle un método `despues_del_paso(perdida, error, epoca)`.
 
+## Primeros resultados
+
+Informe completo: [`resultados-2026-10-28.md`](resultados-2026-10-28.md). En resumen, de 54 comparaciones: 🟢 6 mejor, ⚪ 35 igual, 🔴 13 peor.
+
+- **Series de tiempo suaves**: IDA, activación adaptativa, umbral dinámico, RMB, seno y PReLU son **mejores** que ReLU en `serie_seno` (entre 7 y 16 % menos error). Es la pista más prometedora.
+- **En clasificación** (círculos, lunas, dígitos), casi todas quedan **igual** que la red estándar: la mejora que se vio en los cuadernos no se sostiene con varias semillas y datos de prueba.
+- **HMN** sale **peor en todas las tareas**. En entrenamiento acierta mucho más que en prueba: su memoria se ata a la posición de cada fila, así que memoriza en vez de aprender.
+- **RMB** es **inestable**: en regresión cúbica y lunas algunas semillas se disparan (± muy alto).
+- **Integración no lineal** usa ~9 veces más parámetros y aun así no gana en ninguna tarea.
+
 ## Cómo leer el informe
 
 - **Pieza (prueba)** frente a **Estándar (prueba)**: media ± desviación entre semillas.
