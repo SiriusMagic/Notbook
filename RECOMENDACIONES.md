@@ -1,6 +1,6 @@
 # Recomendaciones: dónde conviene usar tus piezas
 
-Resumen de todo lo que se midió en el banco de evaluación (`laboratorio/banco/`). Cada pieza se probó con 5 semillas, con datos de **prueba** que la red no vio al entrenar, contra la red estándar y contra la tecnología de la industria. Los detalles están en `laboratorio/banco/resultados-*.md`, y el cuaderno `laboratorio-neuronal/12_como_funciona_cada_pieza.ipynb` explica cómo funciona cada una.
+Resumen de todo lo que se midió en el banco de evaluación (`laboratorio/banco/`). Cada pieza se probó con 5 semillas, con datos de **prueba** que la red no vio al entrenar, contra la red estándar y contra la tecnología de la industria. Los detalles están en [`laboratorio/banco/informes/`](./laboratorio/banco/informes), y el cuaderno `laboratorio-neuronal/12_como_funciona_cada_pieza.ipynb` explica cómo funciona cada una.
 
 > **Regla de oro.** Ninguna pieza tuya le gana hoy a la tecnología de la industria con datos que la red nunca vio. Lo más cerca son las **tripletas** (video), que logran casi lo mismo que la U-Net con 42 veces menos parámetros, y el **stacking**, que es lo mejor medido en dígitos. Lo demás son **pistas para seguir investigando** en un campo concreto, no piezas listas para producción. Antes de invertir en una, debe ganarle también a la red estándar **de su mejor tamaño** (a veces una red más chica rinde más) y a lo que usa la industria en ese campo.
 

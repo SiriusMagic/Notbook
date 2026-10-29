@@ -34,9 +34,11 @@ Cada pieza se midió en el **banco de evaluación** (`laboratorio/banco/`), cont
 |---|---|
 | Saber **qué pieza usar en cada campo** y cuáles no están listas (con el motivo) | [`RECOMENDACIONES.md`](./RECOMENDACIONES.md) |
 | Entender **cómo funciona cada pieza** y probarla yo mismo (corre en CPU) | [`laboratorio-neuronal/12_como_funciona_cada_pieza.ipynb`](./laboratorio-neuronal/12_como_funciona_cada_pieza.ipynb) |
-| Ver **las pruebas y las cifras** de cada cuaderno | [`laboratorio/banco/`](./laboratorio/banco): `resultados-01-generativos.md`, `resultados-02-*.md`, `resultados-03*.md`, `resultados-04*.md`, `resultados-05.md`, `resultados-06*.md`, `resultados-07*.md`, `resultados-08.md` |
+| Ver **las pruebas y las cifras** de cada cuaderno | [`laboratorio/banco/informes/`](./laboratorio/banco/informes): un informe por tema, con un índice |
 | Saber **cómo se mide** (semillas, veredicto, tareas) y repetir las pruebas | [`laboratorio/banco/README.md`](./laboratorio/banco/README.md) |
-| Correr las competencias **con GPU y datos reales** | cuadernos [`10`](./laboratorio-neuronal/10_banco_de_evaluacion.ipynb) y [`11`](./laboratorio-neuronal/11_texto_contra_industria.ipynb) en Colab |
+| Correr **en GPU** lo que en CPU quedó corto (un solo cuaderno, deja todo en tu Drive) | [`laboratorio-neuronal/13_correr_pendientes_en_gpu.ipynb`](./laboratorio-neuronal/13_correr_pendientes_en_gpu.ipynb) |
+| Correr las competencias **con GPU y datos reales** por separado | cuadernos [`10`](./laboratorio-neuronal/10_banco_de_evaluacion.ipynb) y [`11`](./laboratorio-neuronal/11_texto_contra_industria.ipynb) en Colab |
+| Ver **todos los cuadernos** y sus secciones | [`laboratorio-neuronal/README.md`](./laboratorio-neuronal/README.md) |
 
 ### Cómo se probó
 
@@ -51,8 +53,8 @@ Cada pieza se midió en el **banco de evaluación** (`laboratorio/banco/`), cont
 
 | Carpeta | Qué es |
 |---|---|
-| [`laboratorio-neuronal/`](./laboratorio-neuronal) | Los cuadernos: 01 texto, 02 capas y activaciones, 03 neuronas alternativas, 04 visión y video, 05 atención, 06 refuerzo y cerebro modular, 07 grafos y generativos, 08 optimización y series, 09 notas e ideas; 10 y 11 competencias con GPU; 12 guía de cómo funciona cada pieza. |
-| [`laboratorio/`](./laboratorio) | Las piezas pasadas a código `.py` con pruebas, y el **banco de evaluación** (`laboratorio/banco/`). |
+| [`laboratorio-neuronal/`](./laboratorio-neuronal) | Los cuadernos: 01 texto, 02 capas y activaciones, 03 neuronas alternativas, 04 visión y video, 05 atención, 06 refuerzo y cerebro modular, 07 grafos y generativos, 08 optimización y series, 09 notas e ideas; 10 y 11 competencias con GPU; 12 guía de cómo funciona cada pieza; 13 correr lo pendiente en GPU. |
+| [`laboratorio/`](./laboratorio) | Las piezas pasadas a código `.py` con pruebas, y el **banco de evaluación** (`laboratorio/banco/`) con sus informes (`laboratorio/banco/informes/`). |
 | [`vulkan/`](./vulkan) | Portal de acceso de la red Wi-Fi Vulkan (`index.html`). |
 
 ## Seguridad y mantenimiento

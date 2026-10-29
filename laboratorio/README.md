@@ -9,7 +9,7 @@ Partes de los cuadernos de [`laboratorio-neuronal/`](../laboratorio-neuronal) qu
 | `entrenamiento.py` | `ProgramadorLR`: baja la tasa de aprendizaje cuando el modelo se estanca | 08 · Programador dinámico de tasa de aprendizaje | Pasa a ser una clase que guarda su estado |
 | `inicializadores.py` | Pesos iniciales sacados del atractor de Lorenz (sistema caótico) o de ruido Perlin, con escala He | 02 · Inicializador con Perlin y Lorenz | Calculaba la escala con las salidas en vez de las entradas |
 | `ensamble.py` | Voto ponderado de varios clasificadores | 08 · `weighted_vote` | Ya no carga modelos con `joblib.load` (puede ejecutar código ajeno) |
-| `banco/` | **Banco de evaluación**: compara las neuronas, activaciones y capas de investigación contra una red estándar, con varias semillas y veredicto honesto. Ver [`banco/README.md`](banco/README.md) | 02 y 04 · experimentos «X contra RedEstandar» | Cada experimento se había probado una sola vez, sin datos de prueba aparte |
+| `banco/` | **Banco de evaluación**: mide cada idea de los cuadernos 01-08 contra la red estándar y contra la industria, con varias semillas, datos de prueba aparte y veredicto honesto. Cómo funciona: [`banco/README.md`](banco/README.md); resultados: [`banco/informes/`](banco/informes) | 01 a 08 · todos los experimentos «X contra RedEstandar» | Cada experimento se había probado una sola vez, sin datos de prueba aparte |
 | `capas_torch.py` | Capa de inversión de gradiente (GRL) para PyTorch | 07 · Inversión de gradiente | Lambda como número y salida como copia |
 
 ## Uso
@@ -37,4 +37,4 @@ Se ejecutan en GitHub en cada cambio (`.github/workflows/check.yml`, trabajo `pr
 
 ## Qué se quedó en los cuadernos
 
-Los experimentos de investigación (neuronas "bioinspiradas", cerebro modular, GAN, RL…) siguen en los cuadernos: son ideas en exploración, sin un resultado estable que valga la pena fijar con pruebas. Si alguno madura, se puede pasar aquí de la misma forma.
+Los cuadernos guardan el código original de cada idea. Las versiones medidas (tal cual y arregladas) están en `banco/`, y qué conviene usar en cada campo, en [`RECOMENDACIONES.md`](../RECOMENDACIONES.md).

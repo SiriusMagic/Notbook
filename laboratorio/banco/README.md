@@ -68,7 +68,7 @@ python -m laboratorio.banco --competencia --tipo texto           # agentes de at
 
 ### Parte generativa y de refuerzo
 
-Informe: [`resultados-01-generativos.md`](resultados-01-generativos.md). Comandos `--siguiente_palabra` y `--difusion`; el tokenizador con refuerzo entra en `--tokenizadores`.
+Informe: [`informes/01-generativos-y-refuerzo.md`](informes/01-generativos-y-refuerzo.md). Comandos `--siguiente_palabra` y `--difusion`; el tokenizador con refuerzo entra en `--tokenizadores`.
 
 - **«Agente PPO»**: predice la siguiente palabra (no segmenta). Acierta 9-12 % contra 16,7 % de la misma red supervisada y del conteo de pares; termina respondiendo casi siempre la misma palabra.
 - **Tokenizador con refuerzo**: tal cual corta casi letra por letra (su «calidad» es al azar); arreglado corta casi como BPE, sin ventaja.
@@ -188,7 +188,7 @@ Adaptaciones (anotadas en el código):
 
 ### Resultados de la segunda tanda
 
-Informe completo: [`resultados-02-memorias.md`](resultados-02-memorias.md). Son 15 piezas en 6 tareas, con 5 semillas: 90 comparaciones corregidas por comparaciones múltiples. Resultado: 🟢 1, ⚪ 86, 🔴 3.
+Informe completo: [`informes/02-memorias-e-industria.md`](informes/02-memorias-e-industria.md). Son 15 piezas en 6 tareas, con 5 semillas: 90 comparaciones corregidas por comparaciones múltiples. Resultado: 🟢 1, ⚪ 86, 🔴 3.
 
 - **Ninguna de tus piezas de esta tanda gana** a la red estándar en ninguna tarea.
 - **Memoria de errores** y **LR por neurona** salen **peores** en regresión cúbica (2–3 veces más error). LR por neurona también sale peor en XOR. Su paso extra después del optimizador estorba al optimizador (Adam), que ya hace ese trabajo.
@@ -224,7 +224,7 @@ Arreglos (anotados en el código):
 
 ### Resultados de la tercera tanda
 
-Informe completo: [`resultados-02-parte2.md`](resultados-02-parte2.md). Son 11 piezas en 6 tareas, con 5 semillas: 66 comparaciones. Resultado: 🟢 0, ⚪ 54, 🔴 12.
+Informe completo: [`informes/02-neuronas-especiales.md`](informes/02-neuronas-especiales.md). Son 11 piezas en 6 tareas, con 5 semillas: 66 comparaciones. Resultado: 🟢 0, ⚪ 54, 🔴 12.
 
 - **Ninguna gana** a la red estándar.
 - **Polinómica**: peor en círculos, serie y dígitos. **Memoriza**: en círculos acierta 93 % al entrenar y 79 % en la prueba, y en dígitos usa 167 000 parámetros contra 3 466. En el cuaderno sí llega al 98 % en círculos con 5 neuronas, porque ese círculo tiene menos ruido y la forma x² + y² es justo un polinomio.
@@ -253,7 +253,7 @@ Arreglos (anotados en el código):
 
 ### Resultados de la cuarta tanda
 
-Informe completo: [`resultados-02-parte3.md`](resultados-02-parte3.md). Son 4 piezas en 6 tareas, con 5 semillas: 24 comparaciones. Resultado: 🟢 2, ⚪ 18, 🔴 4.
+Informe completo: [`informes/02-dendritica-y-otras.md`](informes/02-dendritica-y-otras.md). Son 4 piezas en 6 tareas, con 5 semillas: 24 comparaciones. Resultado: 🟢 2, ⚪ 18, 🔴 4.
 
 - **Synaptic tagging** y **estado interno** ganan en la serie de seno (≈ 6 % menos error). Pero la **tanh sola** da lo mismo (0,0243): la mejora viene de la tanh, no de la idea. Synaptic tagging también sale peor en XOR.
 - **Dendrítica**: peor en regresión, serie y dígitos.
@@ -283,7 +283,7 @@ Arreglos (anotados en el código):
 
 ### Resultados
 
-Informes completos: [`resultados-03.md`](resultados-03.md) y [`resultados-03-clasicos.md`](resultados-03-clasicos.md).
+Informes completos: [`informes/03-neuronas-alternativas.md`](informes/03-neuronas-alternativas.md) y [`informes/03-clasicos.md`](informes/03-clasicos.md).
 
 - **Redes genéticas tal cual: se derrumban** (50 % en círculos y lunas, que es el azar). Es un fallo de diseño: en una red ReLU toda neurona viva recibe ajuste en cada paso, así que las «menos ajustadas» son las **muertas**. El algoritmo reemplaza las neuronas vivas por copias de muertas.
 - **Arreglada**: va destruyendo la red poco a poco: pierde en 5 de 6 tareas (círculos 72 % contra 85 %) y en dígitos empata con mucha variación (93 % ± 4 contra 97 %). El problema de fondo es el criterio: con descenso por gradiente, la neurona que más se ajusta es la que **más importa** para el error, no una «enferma».
@@ -312,7 +312,7 @@ En `piezas_04.py` y `arquitecturas.py`. El cuaderno estaba en TensorFlow; se pas
 
 ### Resultados
 
-Informe completo: [`resultados-04.md`](resultados-04.md). Son 24 comparaciones: 🟢 0, ⚪ 22, 🔴 2.
+Informe completo: [`informes/04-decorrelacion-y-papelito.md`](informes/04-decorrelacion-y-papelito.md). Son 24 comparaciones: 🟢 0, ⚪ 22, 🔴 2.
 
 - **Decorrelación** en capa densa: empata en las 6 tareas.
 - **Papelito preguntón** (las tres versiones): empata en casi todo y pierde en círculos (79-80 % contra 85 %). Usa 5 veces más parámetros y **memoriza**: acierta 88-89 % al entrenar en círculos.
@@ -325,7 +325,7 @@ Limpieza del cuaderno 04 (de 58 a 46 celdas): se unieron las versiones de AODC (
 
 ### Parte generativa: video (`--video`)
 
-Informe: [`resultados-04-video.md`](resultados-04-video.md). Videos de dígitos en movimiento (como Moving MNIST).
+Informe: [`informes/04-video.md`](informes/04-video.md). Videos de dígitos en movimiento (como Moving MNIST).
 - **Tripletas**: 18,3 dB con 11 mil parámetros contra 19,0 dB de una U-Net con 467 mil: casi lo mismo con 42 veces menos parámetros.
 - **FrameInterpolator con LSTM**: 66 millones de parámetros, 2,6 dB peor que la U-Net y más borroso que copiar el fotograma vecino.
 - La GAN es la DCGAN estándar; no tiene una idea nueva que medir.
@@ -348,7 +348,7 @@ Fallos de diseño encontrados (anotados en el código):
 
 ### Resultados
 
-Informe completo: [`resultados-05.md`](resultados-05.md).
+Informe completo: [`informes/05-atencion.md`](informes/05-atencion.md).
 
 - **Transformer con máscara** contra el Transformer normal (reseñas en español, 5 clases, 3 semillas): **empate** en las dos versiones (original 37,9 %, arreglada 38,6 %, normal 37,0 %), con casi el doble de parámetros (1,1 millones contra 0,6). Falta probarlo con más datos y GPU (`--competencia --tipo texto`).
 - **AttentiveLinear**: se derrumba en todas las tareas (50 % en círculos y lunas, que es el azar; 26 % en dígitos).
@@ -365,12 +365,12 @@ Piezas en `piezas_06.py`: `rl_interno` (RlNeuron), `votacion_cabezas` (DecisionV
 
 ### Resultados
 
-Detalle en `resultados-06.md`. Nada le gana a la tecnología actual: 48 de 49 comparaciones dan «igual». En la tarea caótica el cerebro modular sube a 73,8 %, pero con 12 veces más parámetros; una red estándar del mismo tamaño llega a 72,3 % y Dropout en la red chica a 77,4 %. El cerebro modular tal cual se rompe en regresión porque todos los ejemplos reciben la misma recompensa; con recompensa por ejemplo empata.
+Detalle en `informes/06-cerebro-modular.md`. Nada le gana a la tecnología actual: 48 de 49 comparaciones dan «igual». En la tarea caótica el cerebro modular sube a 73,8 %, pero con 12 veces más parámetros; una red estándar del mismo tamaño llega a 72,3 % y Dropout en la red chica a 77,4 %. El cerebro modular tal cual se rompe en regresión porque todos los ejemplos reciben la misma recompensa; con recompensa por ejemplo empata.
 
 
 ### Entornos de refuerzo (`--refuerzo`)
 
-Informe: [`resultados-06-refuerzo.md`](resultados-06-refuerzo.md).
+Informe: [`informes/06-refuerzo.md`](informes/06-refuerzo.md).
 - **Escribir código**: el objetivo «hola mundo» era imposible (no hay espacio); con «hola», PPO tampoco lo logra en 300 000 pasos.
 - **Empujar cubos entre dos**: 0 % tal cual; 65 % con una guía hacia el cubo.
 - **ReroutingNetwork**: REINFORCE tal cual es inestable (19,0 ± 14,2 de 35,8); el estándar llega al óptimo.
@@ -387,7 +387,7 @@ Fallo de diseño: en el cuaderno la GRL va en el **camino principal**, así que 
 
 ### Resultados
 
-Informe completo: [`resultados-07.md`](resultados-07.md).
+Informe completo: [`informes/07-anti-gradiente.md`](informes/07-anti-gradiente.md).
 
 - **Anti-gradiente**: peor en 5 de 6 tareas (dígitos 37 % contra 97 %, XOR 53 % contra 98 %). En lunas cuenta como empate solo por la enorme variación entre semillas (67 % ± 32).
 - Lo demás del cuaderno 07 son simulaciones y dibujos sin una tarea que medir (neuronas espaciales, visualizaciones de grafos), los modelos de grafos de la industria (GCN y GAT con Cora) y la parte generativa (HCMG, D-ReG), que se mide al final.
@@ -401,7 +401,7 @@ Limpieza del cuaderno 07 (de 51 a 23 celdas):
 
 ### Parte generativa: D-ReG y HCMG (`--generativos07`)
 
-Informe: [`resultados-07-generativos.md`](resultados-07-generativos.md).
+Informe: [`informes/07-dreg-y-hcmg.md`](informes/07-dreg-y-hcmg.md).
 - **HCMG no le gana a la U-Net** al dibujar un dígito según su clase y color: 19,29 dB contra 19,80 con 3 veces más parámetros (sin condiciones, 15,3). Una primera medición decía lo contrario por una fuga de datos, ya corregida.
 - **D-ReG** no le gana a una GRU del mismo tamaño (perplejidad 176 contra 146).
 
@@ -412,7 +412,7 @@ Informe: [`resultados-07-generativos.md`](resultados-07-generativos.md).
 
 ### Resultados
 
-Informe completo: [`resultados-08.md`](resultados-08.md).
+Informe completo: [`informes/08-votacion-stacking-y-caotica.md`](informes/08-votacion-stacking-y-caotica.md).
 
 **Todas las piezas en la tarea caótica** (5 semillas). Aquí sí ganan las piezas que frenan la memorización, y varias son tuyas:
 
@@ -432,7 +432,7 @@ Informe completo: [`resultados-08.md`](resultados-08.md).
 
 **Votación ponderada**: gana a la red en dígitos y en la tarea caótica (76 % contra 70 %), pero pierde en 3 de las tareas pequeñas. Siempre queda por debajo de Gradient Boosting.
 
-**Stacking** (recuperado del cuaderno completo de Drive): una regresión logística aprende a combinar los votos. Supera a la votación ponderada en 4 de 5 tareas (caótica 83,6 % contra 76,3 %) y es lo mejor en dígitos (98,5 %). Detalle en `resultados-08.md`.
+**Stacking** (recuperado del cuaderno completo de Drive): una regresión logística aprende a combinar los votos. Supera a la votación ponderada en 4 de 5 tareas (caótica 83,6 % contra 76,3 %) y es lo mejor en dígitos (98,5 %). Detalle en `informes/08-votacion-stacking-y-caotica.md`.
 
 Limpieza del cuaderno 08 (de 15 a 7 celdas):
 - Se quitaron los generadores de series sintéticas, que ya están en `laboratorio/series.py`.
@@ -452,7 +452,7 @@ Barrido con la red estándar y con Dropout de 8 a 128 neuronas por capa (5 semil
 
 ## Primeros resultados
 
-Informe completo: [`resultados-2026-10-28.md`](resultados-2026-10-28.md). De 54 comparaciones, ya corregidas por comparaciones múltiples: 🟢 2 mejor, ⚪ 42 igual, 🔴 10 peor.
+Informe completo: [`informes/02-primera-tanda.md`](informes/02-primera-tanda.md). De 54 comparaciones, ya corregidas por comparaciones múltiples: 🟢 2 mejor, ⚪ 42 igual, 🔴 10 peor.
 
 - **Series de tiempo**: solo **IDA** y **seno** salen mejores que ReLU (≈ 7 % menos error). Es la pista que vale la pena confirmar con series reales.
 - **Clasificación** (círculos, lunas, XOR, dígitos): ninguna pieza gana. La mejora que se vio en los cuadernos no se sostiene con varias semillas y datos de prueba.
