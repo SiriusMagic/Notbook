@@ -326,8 +326,8 @@ Limpieza del cuaderno 04 (de 58 a 46 celdas): se unieron las versiones de AODC (
 ### Parte generativa: video (`--video`)
 
 Informe: [`resultados-04-video.md`](resultados-04-video.md). Videos de dígitos en movimiento (como Moving MNIST).
-- **Tripletas**: 18,3 dB con 11 mil parámetros contra 19,1 dB de una U-Net con 467 mil: casi lo mismo con 42 veces menos parámetros.
-- **FrameInterpolator con LSTM**: 66 millones de parámetros, 2,5 dB peor que la U-Net y más borroso que copiar el fotograma vecino.
+- **Tripletas**: 18,3 dB con 11 mil parámetros contra 19,0 dB de una U-Net con 467 mil: casi lo mismo con 42 veces menos parámetros.
+- **FrameInterpolator con LSTM**: 66 millones de parámetros, 2,6 dB peor que la U-Net y más borroso que copiar el fotograma vecino.
 - La GAN es la DCGAN estándar; no tiene una idea nueva que medir.
 
 ## Cuaderno 05: atención
@@ -402,7 +402,7 @@ Limpieza del cuaderno 07 (de 51 a 23 celdas):
 ### Parte generativa: D-ReG y HCMG (`--generativos07`)
 
 Informe: [`resultados-07-generativos.md`](resultados-07-generativos.md).
-- **HCMG le gana a la U-Net** al dibujar un dígito según su clase y color: 20,44 dB contra 20,04 (sin condiciones, 15,9).
+- **HCMG no le gana a la U-Net** al dibujar un dígito según su clase y color: 19,29 dB contra 19,80 con 3 veces más parámetros (sin condiciones, 15,3). Una primera medición decía lo contrario por una fuga de datos, ya corregida.
 - **D-ReG** no le gana a una GRU del mismo tamaño (perplejidad 176 contra 146).
 
 ## Cuaderno 08: votación ponderada y tarea caótica 20D

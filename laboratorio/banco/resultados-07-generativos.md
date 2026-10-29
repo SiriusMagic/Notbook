@@ -4,7 +4,8 @@ Código: `laboratorio/banco/generativos_07.py` (`python -m laboratorio.banco --g
 
 ## Conclusión
 
-- **HCMG gana a la U-Net de la industria**, poco pero con constancia: 20,44 dB contra 20,04 (3 semillas, desviación 0,10) y SSIM 0,825 contra 0,804. Sin condiciones cae a 15,9 dB: **la forma en que mete las dos condiciones (normalizar y reescalar según cada una, como AdaIN o SPADE) funciona mejor que pasarlas como canales extra**. Ojo: usa 3 veces más parámetros que la U-Net. Es la pista más interesante del cuaderno 07; vale la pena probarla con imágenes reales y texto real (por ejemplo, embeddings de CLIP) en GPU.
+- **HCMG no le gana a la U-Net de la industria**: 19,29 dB contra 19,80 (3 semillas, desviación 0,08), SSIM 0,775 contra 0,793, y usa 3 veces más parámetros. Sus condiciones sí funcionan (sin ellas cae a 15,3 dB), pero pasarlas como canales extra a una U-Net da lo mismo o mejor.
+  - **Ojo, corrección:** una primera medición decía que HCMG ganaba (20,44 contra 20,04). Era una fuga de datos: los dígitos de prueba se repetían con los de entrenamiento (lo encontró Codex) y HCMG, más grande, los memorizaba mejor. Con dígitos de prueba nunca vistos, la ventaja desaparece.
 - **D-ReG no le gana a una GRU del mismo tamaño.** Con poco entrenamiento (600 pasos) parecía el mejor (161 contra 186 de la GRU chica), pero con 1 500 pasos una GRU con los mismos parámetros queda en 146 contra 176. La ventaja venía del tamaño. Su atención sobre un solo elemento no hace nada; el arreglo (mirar las últimas 16 palabras) no mejora con este entrenamiento.
 - El Transformer empeora con más entrenamiento (169 a 292): con 3 000 reseñas memoriza. Para texto hacen falta muchos más datos.
 
@@ -27,10 +28,10 @@ Código: `laboratorio/banco/generativos_07.py` (`python -m laboratorio.banco --g
 | LSTM (industria clásica) | 230,2 ± 2,4 | 646 096 |
 | Transformer causal, como GPT (industria) | 168,5 ± 3,1 | 918 736 |
 
-## HCMG: dibujar el dígito nítido de la clase y el color pedidos a partir de un borrón (3000 para entrenar, 500 de prueba, 20 épocas, 3 semillas)
+## HCMG: dibujar el dígito nítido de la clase y el color pedidos a partir de un borrón (3000 para entrenar y 500 de prueba con dígitos nunca vistos, 20 épocas, 3 semillas)
 
 | Modelo | PSNR (más es mejor) | SSIM | Parámetros |
 |---|---|---|---|
-| HCMG tal cual (dos normalizaciones condicionadas) | 20,44 ± 0,10 | 0,825 ± 0,005 | 1 373 731 |
-| HCMG sin condiciones (control) | 15,92 ± 0,06 | 0,602 ± 0,007 | 1 373 731 |
-| U-Net con las condiciones como canales (industria) | 20,04 ± 0,10 | 0,804 ± 0,006 | 470 339 |
+| HCMG tal cual (dos normalizaciones condicionadas) | 19,29 ± 0,08 | 0,775 ± 0,003 | 1 373 731 |
+| HCMG sin condiciones (control) | 15,27 ± 0,07 | 0,543 ± 0,008 | 1 373 731 |
+| U-Net con las condiciones como canales (industria) | 19,80 ± 0,08 | 0,793 ± 0,007 | 470 339 |

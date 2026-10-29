@@ -14,18 +14,18 @@ Cada pieza se midió en el **banco de evaluación** (`laboratorio/banco/`), cont
 
 | # | Pieza (cuaderno) | Campo | Resultado | Contra la industria |
 |---|---|---|---|---|
-| 1 | **HCMG** (07) | Imágenes guiadas por condiciones | 20,44 dB, SSIM 0,825 | **Gana** a la U-Net (20,04 dB), con 3 veces más parámetros |
-| 2 | **Tripletas** (04) | Video: inventar el fotograma del medio | 18,3 dB con 11 mil parámetros | U-Net: 19,1 dB con 467 mil. **Logra el 75 % de la mejora con el 2 % de los parámetros** |
-| 3 | **Stacking** (recuperado de tu cuaderno completo) | Combinar modelos | 98,5 % en dígitos (lo mejor medido); 83,6 % en la tarea caótica | Supera a la votación ponderada en 4 de 5 tareas; Gradient Boosting sigue mejor en tablas (94 %) |
-| 4 | **Neurona dendrítica** (02) | Datos en tabla con ruido | 76,1 % en la tarea caótica (red estándar: 70,0 %) | Casi iguala a Dropout (77,4 %) con los mismos parámetros |
-| 5 | **Corrector GNN con residuales** (01) | Corrección ortográfica | Mejora el texto con muy pocos parámetros | Falta medir en GPU contra BiLSTM y Transformer (cuaderno 11) |
-| 6 | **Tu difusión con máscaras** (01, recuperada) | Rellenar huecos en un texto | 3,0 % de acierto al rellenar | Empata con la difusión de la industria (MDLM: 3,4 %); al escribir de corrido gana un GPT pequeño |
-| 7 | **DMNA** y **genética invertida** (02, 03) | Datos en tabla con ruido | 72,2 % en la tarea caótica | Ayudan poco frente a la red estándar (70,0 %); Dropout da 77,4 % |
+| 1 | **Tripletas** (04) | Video: inventar el fotograma del medio | 18,3 dB con 11 mil parámetros | U-Net: 19,0 dB con 467 mil. **Logra el 71 % de la mejora con el 2 % de los parámetros** |
+| 2 | **Stacking** (recuperado de tu cuaderno completo) | Combinar modelos | 98,5 % en dígitos (lo mejor medido); 83,6 % en la tarea caótica | Supera a la votación ponderada en 4 de 5 tareas; Gradient Boosting sigue mejor en tablas (94 %) |
+| 3 | **Neurona dendrítica** (02) | Datos en tabla con ruido | 76,1 % en la tarea caótica (red estándar: 70,0 %) | Casi iguala a Dropout (77,4 %) con los mismos parámetros |
+| 4 | **Corrector GNN con residuales** (01) | Corrección ortográfica | Mejora el texto con muy pocos parámetros | Falta medir en GPU contra BiLSTM y Transformer (cuaderno 11) |
+| 5 | **Tu difusión con máscaras** (01, recuperada) | Rellenar huecos en un texto | 3,0 % de acierto al rellenar | Empata con la difusión de la industria (MDLM: 3,4 %); al escribir de corrido gana un GPT pequeño |
+| 6 | **DMNA** y **genética invertida** (02, 03) | Datos en tabla con ruido | 72,2 % en la tarea caótica | Ayudan poco frente a la red estándar (70,0 %); Dropout da 77,4 % |
 
 ### Lo que se aprendió
 
 - **En tareas pequeñas casi nada propio gana**: de unas 60 piezas, la gran mayoría empata con la red estándar. Las «victorias» de los cuadernos originales no se sostenían con varias semillas y datos de prueba.
 - **Más parámetros no es mejor**: en la tarea caótica, una red estándar de 8 neuronas (75,6 %) le gana a una de 32 (70,0 %), porque la grande memoriza. Varias «victorias» (cerebro modular, biomas, integración no lineal, D-ReG) se explican por el tamaño. Una pieza vale la pena si le gana a la red estándar **de su mejor tamaño**.
+- **Cuidado con la fuga de datos**: HCMG parecía ganarle a la U-Net (20,44 contra 20,04 dB) hasta que se vio que los dígitos de prueba se repetían con los de entrenamiento. Con dígitos nunca vistos, pierde (19,29 contra 19,80). Por eso cada resultado se mide con datos que la red no vio.
 - **Los errores de diseño más comunes**: atención sobre un solo elemento (no elige nada), LSTM con secuencias de largo 1 (no recuerda nada), recompensas al azar o que llegan demasiado tarde, y objetivos imposibles.
 
 ### Dónde ver cada cosa

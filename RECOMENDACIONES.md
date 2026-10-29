@@ -2,23 +2,17 @@
 
 Resumen de todo lo que se midió en el banco de evaluación (`laboratorio/banco/`). Cada pieza se probó con 5 semillas, con datos de **prueba** que la red no vio al entrenar, contra la red estándar y contra la tecnología de la industria. Los detalles están en `laboratorio/banco/resultados-*.md`, y el cuaderno `laboratorio-neuronal/12_como_funciona_cada_pieza.ipynb` explica cómo funciona cada una.
 
-> **Regla de oro.** Casi ninguna pieza tuya le gana hoy a la tecnología de la industria. Las excepciones son **HCMG** (imágenes guiadas por condiciones), que le gana por poco a la U-Net, y las **tripletas** (video), que logran casi lo mismo que la U-Net con 42 veces menos parámetros. Lo demás son **pistas para seguir investigando** en un campo concreto, no piezas listas para producción. Antes de invertir en una, debe ganarle también a la red estándar **de su mejor tamaño** (a veces una red más chica rinde más) y a lo que usa la industria en ese campo.
+> **Regla de oro.** Ninguna pieza tuya le gana hoy a la tecnología de la industria con datos que la red nunca vio. Lo más cerca son las **tripletas** (video), que logran casi lo mismo que la U-Net con 42 veces menos parámetros, y el **stacking**, que es lo mejor medido en dígitos. Lo demás son **pistas para seguir investigando** en un campo concreto, no piezas listas para producción. Antes de invertir en una, debe ganarle también a la red estándar **de su mejor tamaño** (a veces una red más chica rinde más) y a lo que usa la industria en ese campo.
 
 ## 1. Recomendadas por campo
 
 Ordenadas de la pista más fuerte a la más débil.
 
-### Imágenes guiadas por condiciones (dibujar según una clase, un color, un texto…)
-
-| Pieza | Resultado | Recomendación |
-|---|---|---|
-| **HCMG** (07) | **Le gana a la U-Net de la industria**: 20,44 dB contra 20,04 (3 semillas), SSIM 0,825 contra 0,804. Sin sus condiciones cae a 15,9 dB | **La pista más fuerte de todo el laboratorio.** Su forma de meter dos condiciones (normalizar y reescalar según cada una, como AdaIN o SPADE) funciona mejor que pasarlas como canales extra. Usa 3 veces más parámetros que la U-Net. Próximo paso: imágenes reales y texto real (embeddings de CLIP) en GPU. |
-
 ### Video: inventar fotogramas intermedios
 
 | Pieza | Resultado | Recomendación |
 |---|---|---|
-| **Tripletas** (04) | 18,3 dB con 11 mil parámetros; la U-Net de la industria, 19,1 dB con 467 mil (42 veces más) | **Recomendadas donde la memoria o la batería cuentan** (celular, cámaras, video en vivo): logran el 75 % de la mejora de la U-Net con el 2 % de sus parámetros. Si sobra memoria, usa la U-Net. |
+| **Tripletas** (04) | 18,3 dB con 11 mil parámetros; la U-Net de la industria, 19,0 dB con 467 mil (42 veces más) | **La pista más fuerte del laboratorio. Recomendadas donde la memoria o la batería cuentan** (celular, cámaras, video en vivo): logran el 71 % de la mejora de la U-Net con el 2 % de sus parámetros. Si sobra memoria, usa la U-Net. |
 
 ### Datos en tabla con ruido (pocas filas, muchas columnas, riesgo de memorizar)
 
@@ -83,6 +77,7 @@ Empatan con la red estándar en casi todo. No vale la pena invertir más en ella
 - **Visión** (04): CNN auto-decorrelada (97,9 % contra 98,4 % de la CNN normal), decorrelación en capa densa, CNN con entrada densa (02). Falta probarlas con MNIST y CIFAR-10 en GPU.
 - **Atención** (05): Transformer con máscara aprendida (empata con casi el doble de parámetros), atención local.
 - **Cerebro modular** (06): versión arreglada, tálamo top-2, votación de cabezas, biomas, RlNeuron.
+- **HCMG** (07): sus dos condiciones funcionan (sin ellas pierde 4 dB), pero una U-Net con las condiciones como canales extra le gana (19,80 contra 19,29 dB) con 3 veces menos parámetros. Una primera medición decía lo contrario por una fuga de datos (los dígitos de prueba se repetían con los de entrenamiento).
 - **D-ReG** (07): con poco entrenamiento parecía el mejor generador de texto, pero una GRU del mismo tamaño le gana (perplejidad 146 contra 176).
 - **Tripletas con corrección sobre el promedio** (04): da lo mismo que las tripletas tal cual.
 
@@ -109,9 +104,9 @@ Fallan por un error de diseño. Cada una tiene anotado en el código qué falla 
 | Agente PPO que predice la siguiente palabra (01) | Acierta 9-12 % contra 16,7 % de la misma red entrenada de forma normal, y termina respondiendo casi siempre la misma palabra. Para predecir texto, el refuerzo no conviene. |
 | Tokenizador con refuerzo, tal cual (01) | Su «calidad» es un número al azar; termina cortando casi letra por letra (3,7 tokens por palabra). |
 | Difusión de texto, tal cual (01) | Solo repite una palabra («sirve sirve sirve…»): el ruido es casi nulo (aprende a copiar) y genera desde máscaras que nunca vio. |
-| FrameInterpolator con LSTM (04) | 66 millones de parámetros, 2,5 dB peor que la U-Net y más borroso que copiar el fotograma vecino: la LSTM recibe la imagen aplanada y no sabe qué píxeles están cerca. Para video, usa convoluciones. |
+| FrameInterpolator con LSTM (04) | 66 millones de parámetros, 2,6 dB peor que la U-Net y más borroso que copiar el fotograma vecino: la LSTM recibe la imagen aplanada y no sabe qué píxeles están cerca. Para video, usa convoluciones. |
 | Escribir código con PPO (06) | El objetivo del cuaderno («hola mundo») es imposible (no hay espacio entre los caracteres). Con uno posible («hola») tampoco lo logra en 300 000 pasos: la recompensa llega demasiado tarde. Para generar código, la industria parte de un modelo que ya sabe escribir. |
 | Empujar cubos sin guía (06) | 0 % de éxito: sin una pista intermedia los dos cuerpos nunca coinciden al empujar. Con guía, 65 %. |
 | REINFORCE tal cual (06, ReroutingNetwork) | Inestable: según la semilla llega al óptimo o se derrumba (19,0 ± 14,2 de 35,8). |
 
-**Falta medir con GPU y datos reales:** HCMG con imágenes y texto reales, las tripletas con video real, y las competencias de los cuadernos 10 y 11 (MNIST, CIFAR-10, reseñas, series reales).
+**Falta medir con GPU y datos reales:** las tripletas con video real, HCMG con imágenes y texto reales, y las competencias de los cuadernos 10 y 11 (MNIST, CIFAR-10, reseñas, series reales).
