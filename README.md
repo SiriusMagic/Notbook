@@ -25,6 +25,7 @@ Todo está en **[`RECOMENDACIONES.md`](./RECOMENDACIONES.md)**. En corto:
 |---|---|
 | `Bh1` | Base de `laboratorio-neuronal`, dividido en 9 cuadernos por tema. |
 | `Copia de B1` | Sus 18 celdas propias se añadieron a `laboratorio-neuronal`. |
+| Cuaderno completo de Drive (451 celdas, con llaves de API) | Era la versión completa de `Bh1`, ya repartida en los cuadernos 01-09. Lo único nuevo, el **sistema inmune cognitivo**, pasó al cuaderno 09. Las utilidades de Python sueltas (PDF, `async`, `__slots__`, primos) y la demo de chat con un LLM local se descartaron. Las llaves **no** se subieron. |
 | `0.1v`, `Untitled2` | Añadidos a `laboratorio-neuronal` como prototipos pequeños. |
 | `Copia de vulkan` | Convertido en `vulkan/index.html`. |
 | `Copia de Antenas`, `Copia de Untitled10` | Movidos a **atlas-rf** → `experiments/`. |
