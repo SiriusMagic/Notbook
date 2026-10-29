@@ -15,6 +15,8 @@ python -m laboratorio.banco --competencia --rapido          # piezas contra CNN,
 python -m laboratorio.banco --tokenizadores                 # cuaderno 01: sílabas contra BPE, Unigram y GPT-4o
 python -m laboratorio.banco --segmentadores                 # cuaderno 01: segmentadores de sílabas
 python -m laboratorio.banco --correccion                    # cuaderno 01: corrección ortográfica (tu GNN)
+python -m laboratorio.banco --siguiente_palabra               # cuaderno 01: agente PPO contra la red supervisada
+python -m laboratorio.banco --difusion                       # cuaderno 01: difusión de texto contra MDLM y un GPT pequeño (mejor con GPU)
 python -m laboratorio.banco --clasicos                      # cuaderno 03: Random Forest, Gradient Boosting, SVM… contra la red
 ```
 

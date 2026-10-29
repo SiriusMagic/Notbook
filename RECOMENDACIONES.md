@@ -40,7 +40,13 @@ Ojos abiertos:
 | Pieza | Resultado | Recomendación |
 |---|---|---|
 | **Sílabas por reglas** (01) | Corta en 2 tokens por palabra con muy pocas desconocidas | Interesante para el español, porque respeta cómo se pronuncian las palabras. La exactitud al clasificar contra BPE y GPT-4o se mide en Colab (cuaderno 11). |
-| **Tokenizador con refuerzo, arreglado** (01) | Corta casi igual que BPE (1,2 tokens por palabra) | Funciona, pero no aporta nada sobre BPE, que es más rápido y está probado. Solo como experimento. |
+| **Tokenizador con refuerzo, arreglado** (01) | Corta casi igual que BPE (1,23 contra 1,19 tokens por palabra), con 6 veces más desconocidas | Funciona, pero no aporta nada sobre BPE, que es más rápido y está probado. Solo como experimento. |
+
+### Generar texto
+
+| Pieza | Resultado | Recomendación |
+|---|---|---|
+| **Difusión de texto con máscaras** (01, arreglada; como MDLM/LLaDA) | Genera palabras variadas y rellena huecos, pero el Transformer autorregresivo (como GPT) del mismo tamaño gana (perplejidad 263 contra 803) | Úsala solo si necesitas **rellenar huecos en medio de un texto**, algo que un modelo palabra por palabra no hace. Para escribir texto de corrido, usa un Transformer autorregresivo. Necesita GPU y mucho más entrenamiento para competir. |
 
 ## 2. Neutras: no ayudan, pero tampoco dañan
 
@@ -72,8 +78,8 @@ Fallan por un error de diseño. Cada una tiene anotado en el código qué falla 
 | Memoria de errores y LR por neurona (02) | Peores en regresión: su paso extra estorba al optimizador Adam. |
 | Synaptic tagging y estado interno (02) | Su «victoria» en la serie de seno es de la tanh, no de la idea. |
 | Cerebro modular tal cual (06) | Se rompe en regresión: todos los ejemplos reciben la misma recompensa. |
-| Agente PPO que predice la siguiente palabra (01) | Acierta mucho menos que la misma red entrenada de forma normal (medición final en curso). |
-| Tokenizador con refuerzo, tal cual (01) | Su «calidad» es un número al azar; termina cortando casi letra por letra. |
-| Difusión de texto, tal cual (01) | El ruido es casi nulo (aprende a copiar) y genera desde máscaras que nunca vio (medición en curso). |
+| Agente PPO que predice la siguiente palabra (01) | Acierta 9-12 % contra 16,7 % de la misma red entrenada de forma normal, y termina respondiendo casi siempre la misma palabra. Para predecir texto, el refuerzo no conviene. |
+| Tokenizador con refuerzo, tal cual (01) | Su «calidad» es un número al azar; termina cortando casi letra por letra (3,7 tokens por palabra). |
+| Difusión de texto, tal cual (01) | Solo repite una palabra («sirve sirve sirve…»): el ruido es casi nulo (aprende a copiar) y genera desde máscaras que nunca vio. |
 
 **Falta medir:** la parte generativa de los cuadernos 04 (tripletas, video, GAN), 06 (entornos de refuerzo) y 07 (HCMG, D-ReG). Este archivo se actualiza cuando terminen.

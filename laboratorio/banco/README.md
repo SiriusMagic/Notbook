@@ -66,6 +66,14 @@ python -m laboratorio.banco --competencia --tipo texto           # agentes de at
 
   Compiten contra la mejor arquitectura normal y se mide qué parte del texto leen. En el cuaderno, el clasificador y los embeddings no se entrenaban; aquí sí, y REINFORCE usa línea base.
 
+### Parte generativa y de refuerzo
+
+Informe: [`resultados-01-generativos.md`](resultados-01-generativos.md). Comandos `--siguiente_palabra` y `--difusion`; el tokenizador con refuerzo entra en `--tokenizadores`.
+
+- **«Agente PPO»**: predice la siguiente palabra (no segmenta). Acierta 9-12 % contra 16,7 % de la misma red supervisada y del conteo de pares; termina respondiendo casi siempre la misma palabra.
+- **Tokenizador con refuerzo**: tal cual corta casi letra por letra (su «calidad» es al azar); arreglado corta casi como BPE, sin ventaja.
+- **Difusión de texto**: tal cual solo repite una palabra (el ruido es casi nulo y genera desde [MASK], que nunca vio). Con máscaras (como MDLM/LLaDA) genera palabras variadas, pero el Transformer autorregresivo gana (perplejidad 263 contra 803).
+
 ## Mediciones de hardware y por dentro (todas las competencias)
 
 `medicion.py` añade a cada corrida:
