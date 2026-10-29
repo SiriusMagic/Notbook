@@ -154,6 +154,35 @@ class CorrectorDiccionario:
         return " ".join(self.palabra(w) for w in frase.split())
 
 
+def corregir_hibrido(dicc: CorrectorDiccionario, sucias: list[str], de_la_red: list[str]) -> list[str]:
+    """Mejora: el diccionario decide **qué** palabras están mal y la red (que ve el contexto) decide **por cuál**
+    cambiarlas.
+
+    Por palabra: si la original es conocida, se deja (como el diccionario). Si no, y la red la cambió por una
+    palabra conocida a 1 o 2 letras de distancia, gana la red; si no, la más frecuente del diccionario. Así la
+    red ya no puede estropear palabras que estaban bien, y desempata cuando hay varias candidatas («caza» o
+    «casa»). Si la red cambió la cantidad de palabras, se usa solo el diccionario.
+    """
+    from rapidfuzz.distance import Levenshtein
+
+    salida = []
+    for sucia, red in zip(sucias, de_la_red):
+        ws, wr = sucia.split(), red.split()
+        if len(ws) != len(wr):
+            salida.append(dicc.corregir(sucia))
+            continue
+        frase = []
+        for a, b in zip(ws, wr):
+            if a in dicc.frec:
+                frase.append(a)
+            elif b in dicc.frec and Levenshtein.distance(a, b) <= 2:
+                frase.append(b)
+            else:
+                frase.append(dicc.palabra(a))
+        salida.append(" ".join(frase))
+    return salida
+
+
 # ---------------------------------------------------------------- Redes (letra por letra)
 def _codificar(frases: list[str]) -> torch.Tensor:
     n = min(max(len(f) for f in frases), LARGO_MAX)
@@ -366,7 +395,8 @@ def competir_correctores(frases_e: list[str], frases_p: list[str], escenarios=("
             aviso(f"{esc:13} {nombre:13} CER={m['cer']:.4f}")
         for red in redes:
             acc: dict = {"cer": [], "palabras_ok": [], "perfectas": []}
-            info, vel = [], []
+            hib: dict = {"cer": [], "palabras_ok": [], "perfectas": []}
+            info, vel, vel_hib = [], [], []
             for s in semillas:
                 modelo, datos = entrenar(red, pares_e, s, **entreno)
                 t0 = time.perf_counter()
@@ -374,10 +404,21 @@ def competir_correctores(frases_e: list[str], frases_p: list[str], escenarios=("
                 vel.append(len(sucias) / (time.perf_counter() - t0))
                 for k, v in medir(pred, pares_p).items():
                     acc[k].append(v)
+                if red == "gnn_residual":  # mejora: la misma red junto con el diccionario
+                    t0 = time.perf_counter()
+                    pred_h = corregir_hibrido(dicc, sucias, predecir(modelo, sucias))
+                    vel_hib.append(len(sucias) / (time.perf_counter() - t0))
+                    for k, v in medir(pred_h, pares_p).items():
+                        hib[k].append(v)
                 info.append(datos)
             filas.append({"nombre": red, **acc, "frases_por_s": mean(vel), "parametros": info[0]["parametros"],
                           "segundos_entrenar": mean(d["segundos_entrenar"] for d in info)})
             aviso(f"{esc:13} {red:13} CER={mean(acc['cer']):.4f}")
+            if hib["cer"]:
+                filas.append({"nombre": "hibrido", **hib, "frases_por_s": mean(vel_hib),
+                              "parametros": info[0]["parametros"],
+                              "segundos_entrenar": mean(d["segundos_entrenar"] for d in info)})
+                aviso(f"{esc:13} {'hibrido':13} CER={mean(hib['cer']):.4f}")
         resultado["escenarios"][esc] = filas
     return resultado
 
@@ -389,6 +430,7 @@ def informe_correctores(r: dict) -> str:
     nombres = {"sin_corregir": "Sin corregir (piso)", "diccionario": "Diccionario (Norvig/SymSpell)",
                "gnn": "Tu GNN tal cual, supervisada", "gnn_rl": "Tu GNN tal cual, con refuerzo (como el cuaderno)",
                "gnn_residual": "Tu GNN con conexiones residuales (arreglo)",
+               "hibrido": "Tu GNN con residuales + diccionario (mejora)",
                "bilstm": "BiLSTM de caracteres", "transformer": "Transformer de caracteres"}
     lineas = ["# Corrección ortográfica: tu GNN contra la industria", "",
               f"Frases reales de reseñas ({r['frases_entreno']:,} para entrenar, {r['frases_prueba']:,} de prueba) "

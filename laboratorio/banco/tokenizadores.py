@@ -151,6 +151,82 @@ class Unigram(Tokenizador):
         return self.sp.encode(texto.lower(), out_type=str)
 
 
+class SilabasBPE(Tokenizador):
+    """Mejora 1 de tus sílabas: **BPE sobre sílabas**. Parte de las sílabas (no de las letras) y junta las que
+    aparecen seguidas a menudo («ca»+«li»+«dad» → «calidad»), sin cruzar nunca el borde entre palabras.
+
+    Así los tokens siempre caen en un borde de sílaba (respetan la pronunciación) y las palabras frecuentes
+    quedan enteras (secuencias cortas, como BPE). Cada sílaba se escribe como un carácter privado de Unicode
+    para reusar el BPE de ``tokenizers``. Una sílaba nunca vista se escribe con sus letras.
+    """
+
+    nombre, descripcion = "silabas_bpe", "BPE sobre sílabas: junta sílabas frecuentes sin cortar ninguna (mejora tuya)"
+    _BASE = 0xF0000  # zona de uso privado de Unicode
+
+    def __init__(self, vocabulario: int = 8000) -> None:
+        self.vocabulario = vocabulario
+
+    def _codificar(self, texto: str, crear: bool) -> str:
+        palabras = []
+        for trozo in _TROZOS.findall(texto.lower()):
+            partes = silabas(trozo) if _PALABRA.fullmatch(trozo) else [trozo]
+            letras = []
+            for sil in partes:
+                if sil not in self.a_letra:
+                    if not crear:  # sílaba nunca vista: se escribe con sus letras (como el respaldo de BPE)
+                        letras.append(sil)
+                        continue
+                    self.a_letra[sil] = chr(self._BASE + len(self.a_letra))
+                    self.de_letra[self.a_letra[sil]] = sil
+                letras.append(self.a_letra[sil])
+            palabras.append("".join(letras))
+        return " ".join(palabras)
+
+    def entrenar(self, textos: list[str]) -> None:
+        from tokenizers import Tokenizer, models, pre_tokenizers, trainers
+
+        self.a_letra, self.de_letra = {}, {}
+        codificados = [self._codificar(t, True) for t in textos]
+        self.tok = Tokenizer(models.BPE(unk_token="[UNK]"))
+        self.tok.pre_tokenizer = pre_tokenizers.Metaspace()
+        trainer = trainers.BpeTrainer(vocab_size=max(self.vocabulario, len(self.a_letra) + 300),
+                                      special_tokens=["[PAD]", "[UNK]"], show_progress=False,
+                                      initial_alphabet=list("abcdefghijklmnñopqrstuvwxyzáéíóúü0123456789"))
+        self.tok.train_from_iterator(codificados, trainer=trainer)
+
+    def tokens(self, texto: str) -> list[str]:
+        out = []
+        for t in self.tok.encode(self._codificar(texto, False)).tokens:
+            out.append("".join(self.de_letra.get(c, c) for c in t))
+        return out
+
+
+class SilabasYPalabras(Tokenizador):
+    """Mejora 2 de tus sílabas: las ``frecuentes`` palabras más comunes del entrenamiento van enteras y el resto
+    se corta en sílabas. Las palabras comunes («bueno», «calidad») no se rompen; las raras se arman con sílabas
+    conocidas en vez de quedar como desconocidas."""
+
+    nombre, descripcion = "silabas_palabras", "palabras frecuentes enteras y el resto en sílabas (mejora tuya)"
+
+    def __init__(self, frecuentes: int = 3000) -> None:
+        self.frecuentes = frecuentes
+
+    def entrenar(self, textos: list[str]) -> None:
+        cuentas = Counter(w for t in textos for w in _PALABRA.findall(t.lower()))
+        self.enteras = {w for w, _ in cuentas.most_common(self.frecuentes)}
+
+    def tokens(self, texto: str) -> list[str]:
+        out = []
+        for trozo in _TROZOS.findall(texto.lower()):
+            if _PALABRA.fullmatch(trozo) and trozo not in self.enteras:
+                partes = silabas(trozo)
+            else:
+                partes = [trozo]
+            out.append(INICIO + partes[0])
+            out.extend(partes[1:])
+        return out
+
+
 class GPT4o(Tokenizador):
     nombre, descripcion = "gpt4o", "tiktoken o200k_base, el de GPT-4o (ya entrenado por OpenAI)"
 
@@ -174,6 +250,7 @@ def tokenizadores_disponibles() -> dict[str, Tokenizador]:
         PorTrozos("silabas", "sílabas por reglas del español (tu idea, corregida)", silabas),
         PorTrozos("silabas_cuaderno", "heurística original del cuaderno 01 (tu idea, tal cual)", _silabear_cuaderno),
         PorTrozos("palabras", "una palabra = un token (word2vec, fastText)", lambda w: [w]),
+        SilabasBPE(), SilabasYPalabras(),
         Caracteres(), BPE(), Unigram(), GPT4o(), TokenizadorRL(arreglado=False), TokenizadorRL(arreglado=True),
     ]}
 
