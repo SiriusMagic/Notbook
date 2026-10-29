@@ -13,6 +13,10 @@ Fallos de diseño (anotados en el código):
 Qué se compara (mismos datos: reseñas reales en español, mismo Transformer de 2 capas, mismos tokens):
 
 - ``difusion_cuaderno``: tal cual (ruido gaussiano 0,0001–0,01, embeddings fijos), muestreo desde [MASK].
+- ``difusion_mascaras_cuaderno``: **tu otra versión** (celda 127 del cuaderno completo de Drive), que ya tapaba
+  palabras con [MASK] en vez de sumar ruido: en el paso t de 10 tapa la fracción t/9 de las posiciones y aprende a
+  devolver toda la frase. Es la misma idea que usa la industria; le faltan dos detalles de MDLM: la pérdida cuenta
+  también las palabras que no se taparon (copiar es fácil y diluye lo que importa) y no pesa por 1/t.
 - ``difusion_mascaras``: el arreglo, como la difusión de texto de la industria (MDLM, Sahoo et al. 2024; LLaDA, 2025):
   el «ruido» es tapar con [MASK] una fracción t de las palabras (t al azar entre 0 y 1) y el modelo aprende a
   destaparlas. Para generar, parte de todo tapado y destapa poco a poco.
@@ -81,7 +85,7 @@ def _modelo(v: int, largo: int, d: int = 128, capas: int = 2, cabezas: int = 4, 
 
 def entrenar(modo: str, xe: np.ndarray, v: int, semilla: int = 0, pasos: int = 3000, lote: int = 64,
              lr: float = 3e-4, pasos_t: int = 50, dispositivo: str = "auto"):
-    """``modo``: "difusion_cuaderno", "difusion_mascaras" o "autorregresivo". ``dispositivo``: auto, cpu o cuda."""
+    """``modo``: "difusion_cuaderno", "difusion_mascaras_cuaderno", "difusion_mascaras" o "autorregresivo". ``dispositivo``: auto, cpu o cuda."""
     import torch
     from torch import nn
 
@@ -106,6 +110,13 @@ def entrenar(modo: str, xe: np.ndarray, v: int, semilla: int = 0, pasos: int = 3
             beta = 0.0001 + t.float() * (0.01 - 0.0001) / (pasos_t - 1)
             ruidoso = e + torch.randn_like(e) * beta.sqrt().view(-1, 1, 1)
             logits = m(ruidoso, t, relleno=~real)
+            perdida = nn.functional.cross_entropy(logits.reshape(-1, v), x.reshape(-1), ignore_index=PAD)
+        elif modo == "difusion_mascaras_cuaderno":  # celda 127: tapa t/9 de las posiciones, pérdida en todo
+            t = torch.randint(0, 10, (lote,), device=dev)
+            cuantas = (t.float() / 9 * largo).long()
+            orden = torch.rand(x.shape, device=dev).argsort(1).argsort(1)  # posición al azar de cada token
+            tapar = orden < cuantas.view(-1, 1)
+            logits = m(m.emb(x.masked_fill(tapar, MASK)), t)
             perdida = nn.functional.cross_entropy(logits.reshape(-1, v), x.reshape(-1), ignore_index=PAD)
         else:  # difusión con máscaras (MDLM): tapar una fracción t, pérdida pesada por 1/t sobre lo tapado
             t = torch.rand(lote, device=dev).clamp(min=1e-3)
@@ -136,7 +147,8 @@ def rellenar(m, modo: str, xp: np.ndarray, fraccion: float, semilla: int = 0, pa
     xr = x.masked_fill(tapar, MASK)
     m.eval()
     with torch.no_grad():
-        t = torch.full((len(x),), (pasos_t - 1) if modo == "difusion_cuaderno" else int(fraccion * pasos_t), device=dev)
+        nivel = {"difusion_cuaderno": pasos_t - 1, "difusion_mascaras_cuaderno": round(fraccion * 9)}
+        t = torch.full((len(x),), nivel.get(modo, int(fraccion * pasos_t)), device=dev)
         pred = m(m.emb(xr), t, relleno=~real if modo == "difusion_cuaderno" else None).argmax(-1)
     return float((pred[tapar] == x[tapar]).float().mean())
 
@@ -186,6 +198,13 @@ def generar(m, modo: str, tok, n: int = 3, largo: int = 20, semilla: int = 0, pa
         else:
             x = torch.full((n, largo), MASK, device=dev)
             x[:, 0] = BOS
+            if modo == "difusion_mascaras_cuaderno":  # celda 127: 10 pasos, argmax, reemplaza lo tapado o lo que cambia
+                for paso in range(9, -1, -1):
+                    pred = m(m.emb(x), torch.full((n,), paso, device=dev)).argmax(-1)
+                    cambiar = (x == MASK) | ((paso < 9) & (x != pred))
+                    x = torch.where(cambiar, pred, x)
+                    x[:, 0] = BOS
+                return [tok.decode([i for i in fila.tolist() if i > 3]) for fila in x.cpu()]
             for paso in range(pasos_t, 0, -1):
                 t = torch.full((n,), paso if modo == "difusion_mascaras" else paso - 1, device=dev)
                 logits = m(m.emb(x), t)
@@ -207,7 +226,7 @@ def competir(entreno: int = 10000, prueba: int = 1000, semillas=(0, 1, 2), pasos
     tok, xe, xp = preparar(te, tp)
     v = tok.get_vocab_size()
     r = {"_datos": {"entreno": len(xe), "prueba": len(xp), "vocabulario": v, "largo": xe.shape[1]}}
-    for modo in ("difusion_cuaderno", "difusion_mascaras", "autorregresivo"):
+    for modo in ("difusion_cuaderno", "difusion_mascaras_cuaderno", "difusion_mascaras", "autorregresivo"):
         filas = []
         for s in semillas:
             m = entrenar(modo, xe, v, s, pasos=pasos, dispositivo=dispositivo)
@@ -225,6 +244,7 @@ def competir(entreno: int = 10000, prueba: int = 1000, semillas=(0, 1, 2), pasos
 def informe(r: dict) -> str:
     d = r["_datos"]
     nombres = {"difusion_cuaderno": "difusión del cuaderno (tal cual)",
+               "difusion_mascaras_cuaderno": "tu difusión con máscaras (celda 127 del cuaderno completo)",
                "difusion_mascaras": "difusión con máscaras (arreglo, como MDLM/LLaDA)",
                "autorregresivo": "Transformer autorregresivo (como GPT)"}
 

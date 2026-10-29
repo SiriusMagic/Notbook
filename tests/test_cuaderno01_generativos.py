@@ -33,10 +33,10 @@ def test_tokenizador_rl_cubre_todo_el_texto():
 def test_difusion_los_tres_modos_corren():
     tok, xe, xp = dt.preparar(TEXTOS, TEXTOS[:8], vocabulario=60, largo=8)
     v = tok.get_vocab_size()
-    for modo in ("difusion_cuaderno", "difusion_mascaras", "autorregresivo"):
+    for modo in ("difusion_cuaderno", "difusion_mascaras_cuaderno", "difusion_mascaras", "autorregresivo"):
         m = dt.entrenar(modo, xe, v, pasos=5, lote=8)
         p = dt.perplejidad(m, modo, xp)
-        assert (p is None) == (modo == "difusion_cuaderno")
+        assert (p is None) == modo.endswith("cuaderno")
         if modo != "autorregresivo":
             assert 0 <= dt.rellenar(m, modo, xp, 0.5) <= 1
         assert len(dt.generar(m, modo, tok, n=2, largo=6, pasos_t=5)) == 2
