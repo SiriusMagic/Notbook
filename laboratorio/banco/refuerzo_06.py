@@ -302,24 +302,30 @@ def _pct(filas, k="exito"):
     return f"{a.mean():.0%}" + (f" ± {a.std():.0%}" if len(a) > 1 else "")
 
 
-def informe(codigo: dict, cubos: dict, rer: dict, pasos_codigo: int, pasos_cubos: tuple) -> str:
+def _num(x, dec=1):
+    return f"{x:,.{dec}f}".replace(",", " ").replace(".", ",")
+
+
+def informe(codigo: dict, cubos: dict, rer: dict, pasos_codigo: int, pasos_cubos: tuple, episodios: int = 30) -> str:
+    sem_cod = len(next(iter(codigo.values()))["ppo"])
     l = ["# Cuaderno 06: entornos de refuerzo", "",
-         "Cada agente se prueba en 50 episodios nuevos por semilla. «Éxito» = llegó a la meta.", "",
-         f"## 1. Escribir código con PPO ({pasos_codigo:,} pasos de entrenamiento, 3 semillas)".replace(",", " "), "",
+         f"Cada agente se prueba en {episodios} episodios nuevos por semilla. «Éxito» = llegó a la meta.", "",
+         f"## 1. Escribir código con PPO ({_num(pasos_codigo, 0)} pasos de entrenamiento, {sem_cod} semillas)", "",
          "| Objetivo | Agente al azar | PPO (ajustes del cuaderno) |", "|---|---|---|"]
     for nombre, v in codigo.items():
         l.append(f"| {nombre} | {v['al_azar']['exito']:.0%} | {_pct(v['ppo'])} |")
-    l += ["", f"## 2. Empujar el cubo entre dos (cuadrícula 10×10, máximo 200 pasos, 3 semillas)", "",
+    l += ["", f"## 2. Empujar el cubo entre dos (cuadrícula 10×10, máximo 200 pasos, {len(cubos['ppo_cuaderno'])} semillas)", "",
           "| Agente | Éxito | Pasos por episodio |", "|---|---|---|",
           f"| al azar | {cubos['al_azar']['exito']:.0%} | {cubos['al_azar']['pasos']:.0f} |"]
-    for nombre, texto, n in (("ppo_cuaderno", "PPO tal cual", pasos_cubos[0]), ("ppo_arreglado", "PPO con posiciones normalizadas", pasos_cubos[1])):
+    for nombre, texto, n in (("ppo_cuaderno", "PPO tal cual", pasos_cubos[0]),
+                             ("ppo_arreglado", "PPO con posiciones normalizadas", pasos_cubos[1])):
         f = cubos[nombre]
-        l.append(f"| {texto} ({n:,} pasos) | {_pct(f)} | {np.mean([x['pasos'] for x in f]):.0f} |".replace(",", " "))
+        l.append(f"| {texto} ({_num(n, 0)} pasos) | {_pct(f)} | {np.mean([x['pasos'] for x in f]):.0f} |")
     a, b = np.array(rer["cuaderno"]), np.array(rer["arreglado"])
-    l += ["", "## 3. ReroutingNetwork (5 estados, 20 pasos por episodio, 5 semillas)", "",
+    l += ["", f"## 3. ReroutingNetwork (5 estados, 20 pasos por episodio, {len(a)} semillas)", "",
           "| Política | Recompensa por episodio |", "|---|---|",
-          f"| la mejor posible (calculada exacta) | {rer['optimo']:.1f} |",
-          f"| REINFORCE tal cual (retorno total, sin línea base) | {a.mean():.1f} ± {a.std():.1f} |",
-          f"| REINFORCE estándar (recompensa futura menos el promedio) | {b.mean():.1f} ± {b.std():.1f} |",
-          f"| al azar | {rer['al_azar']:.1f} |", ""]
-    return "\n".join(l).replace(".", ",").replace("× ", "× ")
+          f"| la mejor posible (calculada exacta) | {_num(rer['optimo'])} |",
+          f"| REINFORCE tal cual (retorno total, sin línea base) | {_num(a.mean())} ± {_num(a.std())} |",
+          f"| REINFORCE estándar (recompensa futura menos el promedio) | {_num(b.mean())} ± {_num(b.std())} |",
+          f"| al azar | {_num(rer['al_azar'])} |", ""]
+    return "\n".join(l)

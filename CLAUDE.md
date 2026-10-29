@@ -18,6 +18,9 @@ python -m laboratorio.banco --correccion                    # cuaderno 01: corre
 python -m laboratorio.banco --siguiente_palabra               # cuaderno 01: agente PPO contra la red supervisada
 python -m laboratorio.banco --difusion                       # cuaderno 01: difusión de texto contra MDLM y un GPT pequeño (mejor con GPU)
 python -m laboratorio.banco --clasicos                      # cuaderno 03: Random Forest, Gradient Boosting, SVM… contra la red
+python -m laboratorio.banco --video                         # cuaderno 04: interpolación de video contra U-Net
+python -m laboratorio.banco --refuerzo                      # cuaderno 06: entornos de refuerzo (necesita stable-baselines3)
+python -m laboratorio.banco --generativos07                 # cuaderno 07: D-ReG y HCMG
 ```
 
 ## Reglas del dueño (aplican a todo cambio)

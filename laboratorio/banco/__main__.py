@@ -53,6 +53,10 @@ def main(argv=None) -> None:
     ap.add_argument("--difusion", action="store_true",
                     help="cuaderno 01: difusión de texto tal cual, con máscaras (MDLM) y Transformer autorregresivo")
     ap.add_argument("--pasos", type=int, default=None, help="con --difusion: pasos de entrenamiento (3000 por defecto)")
+    ap.add_argument("--video", action="store_true", help="cuaderno 04: tripletas y FrameInterpolator contra U-Net")
+    ap.add_argument("--refuerzo", action="store_true",
+                    help="cuaderno 06: entornos de refuerzo (código, cubos, ReroutingNetwork); necesita stable-baselines3")
+    ap.add_argument("--generativos07", action="store_true", help="cuaderno 07: D-ReG y HCMG contra la industria")
     ap.add_argument("--tipo", action="append", choices=["imagen", "texto", "serie"], help="con --competencia: qué datos (se puede repetir)")
     ap.add_argument("--rapido", action="store_true", help="con --competencia: una tarea por tipo, 2 semillas y menos datos")
     ap.add_argument("--arquitectura", default="densa", choices=list(ARQUITECTURAS), help="arquitectura (sin --competencia)")
@@ -130,6 +134,32 @@ def main(argv=None) -> None:
         ruta = Path(a.salida) / "correccion.md"
         ruta.write_text(informe_correctores(r), encoding="utf-8")
         print(f"\nInforme: {ruta}")
+        return
+
+    if a.video or a.refuerzo or a.generativos07:
+        semillas = tuple(range(a.semillas or 3))
+        if a.video:
+            from . import video
+
+            r = video.competir(a.entreno or 2000, a.prueba or 300, semillas, epocas=a.epocas or 20,
+                               dispositivo=a.dispositivo)
+            (Path(a.salida) / "video.md").write_text(video.informe(r), encoding="utf-8")
+        if a.refuerzo:
+            from . import refuerzo_06 as rf
+
+            pasos = a.pasos or 100_000
+            rer = rf.competir_rerouting(semillas)
+            cod = rf.competir_codigo(semillas, pasos=pasos)
+            cub = rf.competir_cubos(semillas, pasos=pasos, pasos_arreglo=pasos)
+            (Path(a.salida) / "refuerzo.md").write_text(rf.informe(cod, cub, rer, pasos, (pasos, pasos), 50),
+                                                        encoding="utf-8")
+        if a.generativos07:
+            from . import generativos_07 as g
+
+            h = g.competir_hcmg(semillas=semillas, epocas=a.epocas or 20)
+            d = g.competir_dreg(semillas=semillas, pasos=a.pasos or 1500)
+            (Path(a.salida) / "generativos07.md").write_text(g.informe(d, h), encoding="utf-8")
+        print(f"\nInformes en: {a.salida}")
         return
 
     if a.siguiente_palabra or a.difusion:
