@@ -7,6 +7,7 @@ Un informe por tema, ordenados por cuaderno. Cada uno tiene la conclusión arrib
 | Informe | Cuaderno | Qué se midió | En una línea |
 |---|---|---|---|
 | [`01-generativos-y-refuerzo.md`](01-generativos-y-refuerzo.md) | 01 texto | Agente PPO que predice palabras, tokenizador con refuerzo, difusión de texto | 🟢 tu difusión con máscaras rellena huecos como la de la industria; 🔴 PPO y tokenizador con refuerzo |
+| [`01-tokenizadores-segmentadores-corrector.md`](01-tokenizadores-segmentadores-corrector.md) | 01 texto | Sílabas contra BPE, Unigram y GPT-4o; segmentadores de sílabas; corrector GNN | ⚪ sílabas un poco arriba de BPE; 🟢 BiLSTM de sílabas 99,2 %; 🔴 corrector bajo el diccionario |
 | [`02-primera-tanda.md`](02-primera-tanda.md) | 02 capas | PReLU adaptativa, IDA, SMA, RMB, HMN, seno… | ⚪ casi todo empata; 🔴 HMN y RMB |
 | [`02-memorias-e-industria.md`](02-memorias-e-industria.md) | 02 capas | Capas con memoria, inicializadores Perlin y Lorenz, topologías densas, contra GELU, SiLU, Mish… | ⚪ empatan; 🔴 memoria de errores y LR por neurona |
 | [`02-neuronas-especiales.md`](02-neuronas-especiales.md) | 02 capas | Polinómica, resonante, DMNA, GMO, CDM, CCN, contra Dropout y BatchNorm | 🔴 polinómica, resonante, HiperReLU |

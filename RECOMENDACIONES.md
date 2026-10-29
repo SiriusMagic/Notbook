@@ -42,7 +42,7 @@ Ojos abiertos:
 
 | Pieza | Resultado | Recomendación |
 |---|---|---|
-| **Corrector GNN con conexiones residuales** (01) | Mejora el texto con muy pocos parámetros | **Recomendado para corregir errores de letras** en textos cortos, donde un modelo grande sería caro. Sin conexiones residuales olvida la letra original y empeora el texto: usa siempre la versión con residuales. Falta medirlo en Colab con GPU contra la BiLSTM y el Transformer de letras (cuaderno 11). |
+| **Corrector GNN con conexiones residuales** (01) | Baja las letras mal de 12,6 % a 10,8 %; el diccionario clásico (Norvig/SymSpell) llega a 6,7 % | **Recomendado para corregir errores de letras** en textos cortos, donde un modelo grande sería caro. Sin conexiones residuales olvida la letra original y empeora el texto: usa siempre la versión con residuales. Falta medirlo en Colab con GPU contra la BiLSTM y el Transformer de letras (cuaderno 11). |
 
 ### Series de tiempo periódicas (ondas, ciclos)
 
@@ -55,7 +55,8 @@ Ojos abiertos:
 
 | Pieza | Resultado | Recomendación |
 |---|---|---|
-| **Sílabas por reglas** (01) | Corta en 2 tokens por palabra con muy pocas desconocidas | Interesante para el español, porque respeta cómo se pronuncian las palabras. La exactitud al clasificar contra BPE y GPT-4o se mide en Colab (cuaderno 11). |
+| **Sílabas por reglas** (01) | 2 tokens por palabra, 0,4 % de desconocidas. Al clasificar reseñas con una CNN: **39,9 %** contra 35,2 % de BPE y 34,7 % de GPT-4o (sin diferencia significativa con 2 semillas) | Interesante para el español **con pocos datos**: respeta la pronunciación y rinde igual o un poco mejor que BPE. Con muchos datos y modelos grandes, BPE da secuencias más cortas (1,2 tokens por palabra). Falta medir con el Transformer en GPU (cuaderno 13). |
+| **Segmentador BiLSTM de sílabas** (01) | 99,2 % de palabras exactas (pyphen: 71,1 %) | Recomendado si se quiere silabear aprendiendo de ejemplos (otro idioma, nombres raros). Para el español, las reglas escritas a mano son igual de exactas y 80 veces más rápidas. |
 | **Tokenizador con refuerzo, arreglado** (01) | Corta casi igual que BPE (1,23 contra 1,19 tokens por palabra), con 6 veces más desconocidas | Funciona, pero no aporta nada sobre BPE, que es más rápido y está probado. Solo como experimento. |
 
 ### Generar texto
