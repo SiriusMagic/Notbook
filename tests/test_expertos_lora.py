@@ -1,5 +1,7 @@
 """Cuaderno 14: maestro (DeepSeek → Hugging Face → reglas), router troncal y parseo de pares."""
 
+import json
+
 import numpy as np
 import pytest
 
@@ -49,3 +51,27 @@ def test_router_troncal_aprende_los_dominios():
     r = e.comparar_routers([textos[i] for i in entreno], [etiquetas[i] for i in entreno],
                            [textos[i] for i in prueba], [etiquetas[i] for i in prueba], semillas=(0,))
     assert 0 <= r["router_troncal"][0] <= 1 and 0 <= r["logistica"] <= 1
+
+
+def test_generar_datos_sin_repetir_y_con_tope():
+    from laboratorio.banco.expertos_lora import Maestro, generar_datos, separar
+
+    llamadas = []
+
+    def llamar(sistema, usuario):  # maestro que repite las mismas 3 preguntas
+        llamadas.append(usuario)
+        return "\n".join(json.dumps({"pregunta": f"¿pregunta {i}?", "respuesta": "r"}) for i in range(3))
+
+    pares = generar_datos(Maestro("falso", llamar), ["redes"], por_dominio=10, tanda=3, aviso=lambda *_: None)
+    assert len(pares) == 3  # no repite y no se queda en un ciclo infinito
+    assert len(llamadas) <= 5
+    assert len({u for u in llamadas}) > 1  # cada tanda pide otro enfoque
+    entreno, prueba = separar(pares + pares, prueba=0.34)
+    assert not {p["pregunta"] for p in entreno} & {p["pregunta"] for p in prueba}
+
+
+def test_generar_datos_con_reglas_avisa():
+    from laboratorio.banco.expertos_lora import generar_datos, maestro_reglas
+
+    with pytest.raises(RuntimeError):
+        generar_datos(maestro_reglas(), ["redes"], 5, aviso=lambda *_: None)

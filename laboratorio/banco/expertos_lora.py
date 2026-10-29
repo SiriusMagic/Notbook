@@ -125,12 +125,18 @@ class Maestro:
                    + ", ".join(DOMINIOS) + ".")
         return normalizar_dominio(self.llamar(sistema, pregunta))
 
-    def generar_pares(self, dominio: str, n: int = 20) -> list[dict]:
-        """Pide ``n`` pares pregunta → respuesta experta del dominio, en español, como líneas JSON."""
+    def generar_pares(self, dominio: str, n: int = 20, enfoque: str = "") -> list[dict]:
+        """Pide ``n`` pares pregunta → respuesta experta del dominio, en español, como líneas JSON.
+
+        ``enfoque`` (p. ej. «seguridad», «diagnóstico de fallas») cambia el pedido en cada tanda, para que el
+        maestro no repita las mismas preguntas.
+        """
         sistema = ("Eres un experto que escribe material de entrenamiento en español claro. Devuelve SOLO líneas "
                    'JSON, una por ejemplo, con las claves "pregunta" y "respuesta".')
         usuario = (f"Escribe {n} preguntas prácticas y distintas de un técnico de {dominio}, cada una con una respuesta "
                    "experta de 3 a 6 frases que explique el porqué.")
+        if enfoque:
+            usuario += f" Todas sobre este tema: {enfoque}."
         pares = []
         for linea in self.llamar(sistema, usuario).splitlines():
             linea = linea.strip().strip(",")
@@ -143,6 +149,68 @@ class Maestro:
             if d.get("pregunta") and d.get("respuesta"):
                 pares.append({"pregunta": d["pregunta"], "respuesta": d["respuesta"], "dominio": dominio})
         return pares
+
+
+ENFOQUES = ["conceptos básicos", "seguridad", "diagnóstico de fallas", "instalación", "mantenimiento",
+            "herramientas y medición", "costos y ahorro", "normas y buenas prácticas", "casos difíciles",
+            "errores comunes de principiantes", "eficiencia", "elegir materiales o equipos"]
+
+
+def _clave(pregunta: str) -> str:
+    return re.sub(r"[^a-záéíóúüñ0-9 ]", "", pregunta.lower()).strip()
+
+
+def generar_datos(maestro: Maestro, dominios=DOMINIOS, por_dominio: int = 200, tanda: int = 20,
+                  intentos_por_tanda: int = 3, aviso=print) -> list[dict]:
+    """Genera ``por_dominio`` pares **sin repetir preguntas**, cambiando el enfoque en cada tanda.
+
+    Se detiene con un error claro si el maestro no sabe generar (las reglas solo etiquetan), y deja de pedir
+    si varias tandas seguidas no traen preguntas nuevas (respuestas mal formadas o repetidas), para no quedar
+    en un ciclo infinito.
+    """
+    if maestro.nombre == "reglas":
+        raise RuntimeError("El maestro de reglas solo etiqueta, no escribe preguntas. Guarda DEEPSEEK_API_KEY en los "
+                           "Secretos de Colab o usa una GPU para el modelo de Hugging Face (MAESTRO_HF).")
+    pares, vistas = [], set()
+    for d in dominios:
+        cuantas, sin_nuevas, k = 0, 0, 0
+        while cuantas < por_dominio and sin_nuevas < intentos_por_tanda:
+            nuevas = 0
+            for p in maestro.generar_pares(d, tanda, ENFOQUES[k % len(ENFOQUES)]):
+                c = _clave(p["pregunta"])
+                if c and c not in vistas and cuantas < por_dominio:
+                    vistas.add(c)
+                    pares.append(p)
+                    cuantas += 1
+                    nuevas += 1
+            k += 1
+            sin_nuevas = 0 if nuevas else sin_nuevas + 1
+            aviso(f"{d}: {cuantas}")
+        if cuantas < por_dominio:
+            aviso(f"Aviso: {d} quedó con {cuantas} de {por_dominio} (el maestro dejó de dar preguntas nuevas).")
+    return pares
+
+
+def separar(pares: list[dict], prueba: float = 0.2, semilla: int = 0) -> tuple[list[dict], list[dict]]:
+    """Separa entrenamiento y prueba **sin preguntas repetidas entre las dos partes** (por si el archivo trae
+    duplicados de una corrida vieja), y en la misma proporción por dominio."""
+    import random
+
+    unicos, vistas = [], set()
+    for p in pares:
+        c = _clave(p["pregunta"])
+        if c not in vistas:
+            vistas.add(c)
+            unicos.append(p)
+    rng = random.Random(semilla)
+    entreno, prueba_ = [], []
+    for d in sorted({p["dominio"] for p in unicos}):
+        grupo = [p for p in unicos if p["dominio"] == d]
+        rng.shuffle(grupo)
+        corte = int(round((1 - prueba) * len(grupo)))
+        entreno += grupo[:corte]
+        prueba_ += grupo[corte:]
+    return entreno, prueba_
 
 
 def normalizar_dominio(texto: str) -> str:
@@ -206,7 +274,8 @@ def maestro_hf(modelo: str | None = None) -> Maestro | None:
                                         tokenize=False, add_generation_prompt=True)
         x = tok(texto, return_tensors="pt").to(m.device)
         with torch.no_grad():
-            y = m.generate(**x, max_new_tokens=1024, do_sample=False)
+            # Con muestreo: cada tanda sale distinta (sin él, el mismo pedido da siempre las mismas preguntas).
+            y = m.generate(**x, max_new_tokens=1024, do_sample=True, temperature=0.8, top_p=0.95)
         return tok.decode(y[0, x["input_ids"].shape[1]:], skip_special_tokens=True)
 
     return Maestro("hf", llamar, modelo)
