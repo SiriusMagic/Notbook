@@ -2,11 +2,23 @@
 
 Resumen de todo lo que se midió en el banco de evaluación (`laboratorio/banco/`). Cada pieza se probó con 5 semillas, con datos de **prueba** que la red no vio al entrenar, contra la red estándar y contra la tecnología de la industria. Los detalles están en `laboratorio/banco/resultados-*.md`, y el cuaderno `laboratorio-neuronal/12_como_funciona_cada_pieza.ipynb` explica cómo funciona cada una.
 
-> **Regla de oro.** Ninguna pieza tuya le gana hoy a la tecnología de la industria en tareas pequeñas. Las recomendaciones de abajo son **pistas para seguir investigando** en un campo concreto, no piezas listas para producción. Antes de invertir en una, debe ganarle también a la red estándar **de su mejor tamaño** (a veces una red más chica rinde más) y a lo que usa la industria en ese campo.
+> **Regla de oro.** Casi ninguna pieza tuya le gana hoy a la tecnología de la industria. Las excepciones son **HCMG** (imágenes guiadas por condiciones), que le gana por poco a la U-Net, y las **tripletas** (video), que logran casi lo mismo que la U-Net con 42 veces menos parámetros. Lo demás son **pistas para seguir investigando** en un campo concreto, no piezas listas para producción. Antes de invertir en una, debe ganarle también a la red estándar **de su mejor tamaño** (a veces una red más chica rinde más) y a lo que usa la industria en ese campo.
 
 ## 1. Recomendadas por campo
 
 Ordenadas de la pista más fuerte a la más débil.
+
+### Imágenes guiadas por condiciones (dibujar según una clase, un color, un texto…)
+
+| Pieza | Resultado | Recomendación |
+|---|---|---|
+| **HCMG** (07) | **Le gana a la U-Net de la industria**: 20,44 dB contra 20,04 (3 semillas), SSIM 0,825 contra 0,804. Sin sus condiciones cae a 15,9 dB | **La pista más fuerte de todo el laboratorio.** Su forma de meter dos condiciones (normalizar y reescalar según cada una, como AdaIN o SPADE) funciona mejor que pasarlas como canales extra. Usa 3 veces más parámetros que la U-Net. Próximo paso: imágenes reales y texto real (embeddings de CLIP) en GPU. |
+
+### Video: inventar fotogramas intermedios
+
+| Pieza | Resultado | Recomendación |
+|---|---|---|
+| **Tripletas** (04) | 18,3 dB con 11 mil parámetros; la U-Net de la industria, 19,1 dB con 467 mil (42 veces más) | **Recomendadas donde la memoria o la batería cuentan** (celular, cámaras, video en vivo): logran el 75 % de la mejora de la U-Net con el 2 % de sus parámetros. Si sobra memoria, usa la U-Net. |
 
 ### Datos en tabla con ruido (pocas filas, muchas columnas, riesgo de memorizar)
 
@@ -55,6 +67,13 @@ Ojos abiertos:
 |---|---|---|
 | **Difusión de texto con máscaras** (01: tu versión de la celda 127 y la arreglada como MDLM/LLaDA) | Tu versión rellena huecos igual que la de la industria (3,0 % contra 3,4 %); para generar hay que sortear las palabras en vez de elegir siempre la más probable. Genera palabras variadas, pero el Transformer autorregresivo (como GPT) del mismo tamaño gana (perplejidad 263 contra 803) | Úsala solo si necesitas **rellenar huecos en medio de un texto**, algo que un modelo palabra por palabra no hace. Para escribir texto de corrido, usa un Transformer autorregresivo. Necesita GPU y mucho más entrenamiento para competir. |
 
+### Agentes de refuerzo (lecciones del cuaderno 06)
+
+| Qué | Resultado | Recomendación |
+|---|---|---|
+| **Guiar al agente** (recompensa pequeña por acercarse al objetivo) | Empujar el cubo entre dos: de 0 % a **65 %** de éxito | Si la recompensa llega muy tarde, el agente no aprende nada: dale pistas intermedias. |
+| **REINFORCE estándar** (recompensa futura menos el promedio) | ReroutingNetwork: llega al óptimo en las 3 semillas; tal cual, una se derrumba | Usa siempre la versión estándar (o PPO). |
+
 ## 2. Neutras: no ayudan, pero tampoco dañan
 
 Empatan con la red estándar en casi todo. No vale la pena invertir más en ellas salvo que haya una idea nueva que probar.
@@ -64,6 +83,8 @@ Empatan con la red estándar en casi todo. No vale la pena invertir más en ella
 - **Visión** (04): CNN auto-decorrelada (97,9 % contra 98,4 % de la CNN normal), decorrelación en capa densa, CNN con entrada densa (02). Falta probarlas con MNIST y CIFAR-10 en GPU.
 - **Atención** (05): Transformer con máscara aprendida (empata con casi el doble de parámetros), atención local.
 - **Cerebro modular** (06): versión arreglada, tálamo top-2, votación de cabezas, biomas, RlNeuron.
+- **D-ReG** (07): con poco entrenamiento parecía el mejor generador de texto, pero una GRU del mismo tamaño le gana (perplejidad 146 contra 176).
+- **Tripletas con corrección sobre el promedio** (04): da lo mismo que las tripletas tal cual.
 
 ## 3. No están listas o dejaron mucho que desear
 
@@ -88,5 +109,9 @@ Fallan por un error de diseño. Cada una tiene anotado en el código qué falla 
 | Agente PPO que predice la siguiente palabra (01) | Acierta 9-12 % contra 16,7 % de la misma red entrenada de forma normal, y termina respondiendo casi siempre la misma palabra. Para predecir texto, el refuerzo no conviene. |
 | Tokenizador con refuerzo, tal cual (01) | Su «calidad» es un número al azar; termina cortando casi letra por letra (3,7 tokens por palabra). |
 | Difusión de texto, tal cual (01) | Solo repite una palabra («sirve sirve sirve…»): el ruido es casi nulo (aprende a copiar) y genera desde máscaras que nunca vio. |
+| FrameInterpolator con LSTM (04) | 66 millones de parámetros, 2,5 dB peor que la U-Net y más borroso que copiar el fotograma vecino: la LSTM recibe la imagen aplanada y no sabe qué píxeles están cerca. Para video, usa convoluciones. |
+| Escribir código con PPO (06) | El objetivo del cuaderno («hola mundo») es imposible (no hay espacio entre los caracteres). Con uno posible («hola») tampoco lo logra en 300 000 pasos: la recompensa llega demasiado tarde. Para generar código, la industria parte de un modelo que ya sabe escribir. |
+| Empujar cubos sin guía (06) | 0 % de éxito: sin una pista intermedia los dos cuerpos nunca coinciden al empujar. Con guía, 65 %. |
+| REINFORCE tal cual (06, ReroutingNetwork) | Inestable: según la semilla llega al óptimo o se derrumba (19,0 ± 14,2 de 35,8). |
 
-**Falta medir:** la parte generativa de los cuadernos 04 (tripletas, video, GAN), 06 (entornos de refuerzo) y 07 (HCMG, D-ReG). Este archivo se actualiza cuando terminen.
+**Falta medir con GPU y datos reales:** HCMG con imágenes y texto reales, las tripletas con video real, y las competencias de los cuadernos 10 y 11 (MNIST, CIFAR-10, reseñas, series reales).
