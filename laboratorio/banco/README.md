@@ -322,6 +322,14 @@ Informe completo: [`resultados-04.md`](resultados-04.md). Son 24 comparaciones: 
 
 Limpieza del cuaderno 04 (de 58 a 46 celdas): se unieron las versiones de AODC (2), del papelito preguntón (RDCR ×3, NIDI y ODFE) y de RCF (3). Se quitó una celda que repetía la «densa de entrada» del cuaderno 02. La parte generativa (tripletas, interpolación de video, GAN) se mide al final, junto con los demás generativos.
 
+
+### Parte generativa: video (`--video`)
+
+Informe: [`resultados-04-video.md`](resultados-04-video.md). Videos de dígitos en movimiento (como Moving MNIST).
+- **Tripletas**: 18,3 dB con 11 mil parámetros contra 19,1 dB de una U-Net con 467 mil: casi lo mismo con 42 veces menos parámetros.
+- **FrameInterpolator con LSTM**: 66 millones de parámetros, 2,5 dB peor que la U-Net y más borroso que copiar el fotograma vecino.
+- La GAN es la DCGAN estándar; no tiene una idea nueva que medir.
+
 ## Cuaderno 05: atención
 
 En `piezas_05.py` y `arquitecturas.py`.
@@ -359,6 +367,14 @@ Piezas en `piezas_06.py`: `rl_interno` (RlNeuron), `votacion_cabezas` (DecisionV
 
 Detalle en `resultados-06.md`. Nada le gana a la tecnología actual: 48 de 49 comparaciones dan «igual». En la tarea caótica el cerebro modular sube a 73,8 %, pero con 12 veces más parámetros; una red estándar del mismo tamaño llega a 72,3 % y Dropout en la red chica a 77,4 %. El cerebro modular tal cual se rompe en regresión porque todos los ejemplos reciben la misma recompensa; con recompensa por ejemplo empata.
 
+
+### Entornos de refuerzo (`--refuerzo`)
+
+Informe: [`resultados-06-refuerzo.md`](resultados-06-refuerzo.md).
+- **Escribir código**: el objetivo «hola mundo» era imposible (no hay espacio); con «hola», PPO tampoco lo logra en 300 000 pasos.
+- **Empujar cubos entre dos**: 0 % tal cual; 65 % con una guía hacia el cubo.
+- **ReroutingNetwork**: REINFORCE tal cual es inestable (19,0 ± 14,2 de 35,8); el estándar llega al óptimo.
+
 ## Cuaderno 07: grafos (parte no generativa)
 
 En `piezas_07.py`.
@@ -381,6 +397,13 @@ Limpieza del cuaderno 07 (de 51 a 23 celdas):
 - Se dejó un solo dibujo de grafos ramificados (había 5).
 - Se quitaron las demos de BERT repetidas del cuaderno 03, la neurona resonante repetida del 02, una neurona escalón básica, una celda toda comentada y la «red inversa» (una regresión lineal al revés, sin una idea nueva).
 - Se arregló una celda que empezaba con una palabra suelta («Un») y no corría.
+
+
+### Parte generativa: D-ReG y HCMG (`--generativos07`)
+
+Informe: [`resultados-07-generativos.md`](resultados-07-generativos.md).
+- **HCMG le gana a la U-Net** al dibujar un dígito según su clase y color: 20,44 dB contra 20,04 (sin condiciones, 15,9).
+- **D-ReG** no le gana a una GRU del mismo tamaño (perplejidad 176 contra 146).
 
 ## Cuaderno 08: votación ponderada y tarea caótica 20D
 

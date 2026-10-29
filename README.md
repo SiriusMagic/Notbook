@@ -1,26 +1,69 @@
 # Notbook
 
-Cuadernos de Google Colab de varios años, ordenados y documentados.
+Laboratorio de investigación en redes neuronales: tus neuronas, capas y arquitecturas propias, medidas contra la tecnología que usa hoy la industria. Cuadernos de Google Colab de varios años, ordenados y documentados.
 
-## Recomendaciones: ¿dónde usar tus piezas?
+## ¿Qué funciona? Resultados en una mirada
 
-Todo está en **[`RECOMENDACIONES.md`](./RECOMENDACIONES.md)**. En corto:
+Cada pieza se midió en el **banco de evaluación** (`laboratorio/banco/`), contra la red estándar y contra lo que usa la industria, con varias semillas y datos de prueba que la red nunca vio.
 
-- **Datos en tabla con ruido**: es donde mejor les va a tus piezas. La **neurona dendrítica** es la pista más fuerte (76 % contra 70 % de la red estándar; casi como Dropout). Le siguen DMNA y la genética invertida. Para un proyecto real en tablas, Gradient Boosting sigue siendo mejor (94 %).
-- **Combinar modelos**: el **stacking** recuperado de tu cuaderno completo es lo mejor en dígitos (98,5 %) y supera a la votación ponderada en 4 de 5 tareas.
-- **Corrección ortográfica**: el corrector GNN **con conexiones residuales** mejora el texto con muy pocos parámetros.
-- **Series con ciclos**: IDA y la activación seno bajan ≈ 7 % el error frente a ReLU, pero una regresión lineal les gana en esa serie. Falta probarlas con series reales.
-- **Al final del archivo**: las piezas que no están listas o dejaron mucho que desear, con el motivo de cada una.
+- 🟢 **prometedora:** le gana o casi le gana a la industria en algo concreto.
+- ⚪ **neutra:** empata; no daña, pero tampoco aporta.
+- 🔴 **no está lista:** pierde por un error de diseño (anotado y, cuando se pudo, arreglado).
+
+### 🟢 Las más prometedoras
+
+| # | Pieza (cuaderno) | Campo | Resultado | Contra la industria |
+|---|---|---|---|---|
+| 1 | **HCMG** (07) | Imágenes guiadas por condiciones | 20,44 dB, SSIM 0,825 | **Gana** a la U-Net (20,04 dB), con 3 veces más parámetros |
+| 2 | **Tripletas** (04) | Video: inventar el fotograma del medio | 18,3 dB con 11 mil parámetros | U-Net: 19,1 dB con 467 mil. **Logra el 75 % de la mejora con el 2 % de los parámetros** |
+| 3 | **Stacking** (recuperado de tu cuaderno completo) | Combinar modelos | 98,5 % en dígitos (lo mejor medido); 83,6 % en la tarea caótica | Supera a la votación ponderada en 4 de 5 tareas; Gradient Boosting sigue mejor en tablas (94 %) |
+| 4 | **Neurona dendrítica** (02) | Datos en tabla con ruido | 76,1 % en la tarea caótica (red estándar: 70,0 %) | Casi iguala a Dropout (77,4 %) con los mismos parámetros |
+| 5 | **Corrector GNN con residuales** (01) | Corrección ortográfica | Mejora el texto con muy pocos parámetros | Falta medir en GPU contra BiLSTM y Transformer (cuaderno 11) |
+| 6 | **Tu difusión con máscaras** (01, recuperada) | Rellenar huecos en un texto | 3,0 % de acierto al rellenar | Empata con la difusión de la industria (MDLM: 3,4 %); al escribir de corrido gana un GPT pequeño |
+| 7 | **DMNA** y **genética invertida** (02, 03) | Datos en tabla con ruido | 72,2 % en la tarea caótica | Ayudan poco frente a la red estándar (70,0 %); Dropout da 77,4 % |
+
+### Lo que se aprendió
+
+- **En tareas pequeñas casi nada propio gana**: de unas 60 piezas, la gran mayoría empata con la red estándar. Las «victorias» de los cuadernos originales no se sostenían con varias semillas y datos de prueba.
+- **Más parámetros no es mejor**: en la tarea caótica, una red estándar de 8 neuronas (75,6 %) le gana a una de 32 (70,0 %), porque la grande memoriza. Varias «victorias» (cerebro modular, biomas, integración no lineal, D-ReG) se explican por el tamaño. Una pieza vale la pena si le gana a la red estándar **de su mejor tamaño**.
+- **Los errores de diseño más comunes**: atención sobre un solo elemento (no elige nada), LSTM con secuencias de largo 1 (no recuerda nada), recompensas al azar o que llegan demasiado tarde, y objetivos imposibles.
+
+### Dónde ver cada cosa
+
+| Quiero… | Dónde |
+|---|---|
+| Saber **qué pieza usar en cada campo** y cuáles no están listas (con el motivo) | [`RECOMENDACIONES.md`](./RECOMENDACIONES.md) |
+| Entender **cómo funciona cada pieza** y probarla yo mismo (corre en CPU) | [`laboratorio-neuronal/12_como_funciona_cada_pieza.ipynb`](./laboratorio-neuronal/12_como_funciona_cada_pieza.ipynb) |
+| Ver **las pruebas y las cifras** de cada cuaderno | [`laboratorio/banco/`](./laboratorio/banco): `resultados-01-generativos.md`, `resultados-02-*.md`, `resultados-03*.md`, `resultados-04*.md`, `resultados-05.md`, `resultados-06*.md`, `resultados-07*.md`, `resultados-08.md` |
+| Saber **cómo se mide** (semillas, veredicto, tareas) y repetir las pruebas | [`laboratorio/banco/README.md`](./laboratorio/banco/README.md) |
+| Correr las competencias **con GPU y datos reales** | cuadernos [`10`](./laboratorio-neuronal/10_banco_de_evaluacion.ipynb) y [`11`](./laboratorio-neuronal/11_texto_contra_industria.ipynb) en Colab |
+
+### Cómo se probó
+
+- **Mismas tareas para todos:** regresión, círculos, lunas, XOR, serie de seno, dígitos, una tarea caótica de 20 dimensiones, reseñas reales en español, videos de dígitos en movimiento y entornos de refuerzo.
+- **Varias semillas** (3 a 5): si una pieza gana con una y pierde con otra, fue suerte.
+- **Datos de prueba** que la red no vio al entrenar.
+- **Veredicto estadístico:** prueba t pareada, corregida por comparaciones múltiples.
+- **Rivales de la industria** en cada campo: GELU, Dropout, BatchNorm, CNN, U-Net, LSTM, GRU, Transformer, BPE, MDLM, Gradient Boosting, PPO…
+- Para repetirlas: `python -m laboratorio.banco --todo` (tareas pequeñas, unos 5 minutos en CPU) y los demás comandos en [`CLAUDE.md`](./CLAUDE.md).
 
 ## Contenido
 
 | Carpeta | Qué es |
 |---|---|
-| [`laboratorio-neuronal/`](./laboratorio-neuronal) | Experimentos con redes neuronales en 9 cuadernos por tema: texto, capas y activaciones, neuronas alternativas, visión, atención, refuerzo, grafos, optimización y notas. Más los cuadernos 10 y 11 (competencias con GPU) y el 12, una guía de cómo funciona cada pieza y qué resultado dio. |
-| [`laboratorio/`](./laboratorio) | Piezas útiles sacadas de los cuadernos como código `.py` con pruebas, y un **banco de evaluación** (`laboratorio/banco/`) que compara tus neuronas y capas de investigación contra una red estándar: sílabas del español, series de tiempo sintéticas, programador de tasa de aprendizaje, inicializador de Lorenz, voto ponderado y capa de inversión de gradiente. |
+| [`laboratorio-neuronal/`](./laboratorio-neuronal) | Los cuadernos: 01 texto, 02 capas y activaciones, 03 neuronas alternativas, 04 visión y video, 05 atención, 06 refuerzo y cerebro modular, 07 grafos y generativos, 08 optimización y series, 09 notas e ideas; 10 y 11 competencias con GPU; 12 guía de cómo funciona cada pieza. |
+| [`laboratorio/`](./laboratorio) | Las piezas pasadas a código `.py` con pruebas, y el **banco de evaluación** (`laboratorio/banco/`). |
 | [`vulkan/`](./vulkan) | Portal de acceso de la red Wi-Fi Vulkan (`index.html`). |
 
-## Qué pasó con cada cuaderno original
+## Seguridad y mantenimiento
+
+- **Revisión automática** (`.github/workflows/check.yml`): en cada cambio comprueba que los cuadernos tengan formato válido, que no tengan llaves de API ni resultados guardados, y avisa de errores de sintaxis. También corre las pruebas de `laboratorio/` (`pytest`).
+- **Dependabot** vigila `laboratorio-neuronal/requirements.txt` y `laboratorio/requirements.txt`: avisa de fallos de seguridad y propone actualizaciones una vez al mes, agrupadas.
+- `torch.load` usa `weights_only=True` (solo carga pesos, no código) y los archivos `joblib` llevan un aviso de cargar solo archivos propios.
+- PyTorch Geometric se instala desde PyPI, sin instalaciones desde URLs externas.
+
+<details>
+<summary><b>Qué pasó con cada cuaderno original</b></summary>
 
 | Cuaderno | Destino |
 |---|---|
@@ -39,12 +82,7 @@ Todo está en **[`RECOMENDACIONES.md`](./RECOMENDACIONES.md)**. En corto:
 
 Todo lo borrado sigue recuperable en el historial de Git.
 
-## Seguridad y mantenimiento
-
-- **Revisión automática** (`.github/workflows/check.yml`): en cada cambio comprueba que los cuadernos tengan formato válido, que no tengan llaves de API ni resultados guardados, y avisa de errores de sintaxis. También corre las pruebas de `laboratorio/` (`pytest`).
-- **Dependabot** vigila `laboratorio-neuronal/requirements.txt` y `laboratorio/requirements.txt`: avisa de fallos de seguridad y propone actualizaciones una vez al mes, agrupadas.
-- `torch.load` usa `weights_only=True` (solo carga pesos, no código) y los archivos `joblib` llevan un aviso de cargar solo archivos propios.
-- PyTorch Geometric se instala desde PyPI, sin instalaciones desde URLs externas.
+</details>
 
 ## Abrir en Colab
 
