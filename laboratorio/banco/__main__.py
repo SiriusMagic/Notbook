@@ -142,7 +142,8 @@ def main(argv=None) -> None:
             ruta.write_text(siguiente_palabra.informe(r), encoding="utf-8")
             print(f"\nInforme: {ruta}")
         if a.difusion:
-            r = difusion_texto.competir(a.entreno or 10000, a.prueba or 1000, semillas, pasos=a.pasos or 3000)
+            r = difusion_texto.competir(a.entreno or 10000, a.prueba or 1000, semillas, pasos=a.pasos or 3000,
+                                        dispositivo=a.dispositivo)
             ruta = Path(a.salida) / "difusion.md"
             ruta.write_text(difusion_texto.informe(r), encoding="utf-8")
             print(f"\nInforme: {ruta}")

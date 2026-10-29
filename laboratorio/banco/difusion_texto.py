@@ -80,15 +80,17 @@ def _modelo(v: int, largo: int, d: int = 128, capas: int = 2, cabezas: int = 4, 
 
 
 def entrenar(modo: str, xe: np.ndarray, v: int, semilla: int = 0, pasos: int = 3000, lote: int = 64,
-             lr: float = 3e-4, pasos_t: int = 50):
-    """``modo``: "difusion_cuaderno", "difusion_mascaras" o "autorregresivo"."""
+             lr: float = 3e-4, pasos_t: int = 50, dispositivo: str = "auto"):
+    """``modo``: "difusion_cuaderno", "difusion_mascaras" o "autorregresivo". ``dispositivo``: auto, cpu o cuda."""
     import torch
     from torch import nn
 
     torch.manual_seed(semilla)
     rng = np.random.default_rng(semilla)
     largo = xe.shape[1]
-    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if dispositivo == "auto":
+        dispositivo = "cuda" if torch.cuda.is_available() else "cpu"
+    dev = torch.device(dispositivo)
     m = _modelo(v, largo, pasos_t=pasos_t).to(dev)
     opt = torch.optim.AdamW(m.parameters(), lr=lr)
     for _ in range(pasos):
@@ -197,7 +199,8 @@ def generar(m, modo: str, tok, n: int = 3, largo: int = 20, semilla: int = 0, pa
     return [tok.decode([i for i in fila.tolist() if i > 3]) for fila in x.cpu()]
 
 
-def competir(entreno: int = 10000, prueba: int = 1000, semillas=(0, 1, 2), pasos: int = 3000) -> dict:
+def competir(entreno: int = 10000, prueba: int = 1000, semillas=(0, 1, 2), pasos: int = 3000,
+             dispositivo: str = "auto") -> dict:
     from .datos_reales import textos_reales
 
     te, _, tp, _ = textos_reales("resenas_es", entreno, prueba)
@@ -207,7 +210,7 @@ def competir(entreno: int = 10000, prueba: int = 1000, semillas=(0, 1, 2), pasos
     for modo in ("difusion_cuaderno", "difusion_mascaras", "autorregresivo"):
         filas = []
         for s in semillas:
-            m = entrenar(modo, xe, v, s, pasos=pasos)
+            m = entrenar(modo, xe, v, s, pasos=pasos, dispositivo=dispositivo)
             fila = {"perplejidad": perplejidad(m, modo, xp, s),
                     "parametros": sum(p.numel() for p in m.parameters())}
             if modo != "autorregresivo":

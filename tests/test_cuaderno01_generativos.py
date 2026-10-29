@@ -46,3 +46,9 @@ def test_ruido_del_cuaderno_es_casi_nulo():
     """La desviación máxima del ruido (0,1) es diminuta frente a la norma de un embedding (≈ √128 ≈ 11)."""
     emb = torch.nn.Embedding(10, 128)
     assert emb.weight.norm(dim=1).mean() > 50 * (0.01 ** 0.5)
+
+
+def test_difusion_respeta_el_dispositivo_pedido():
+    tok, xe, _ = dt.preparar(TEXTOS, TEXTOS[:4], vocabulario=60, largo=8)
+    m = dt.entrenar("difusion_mascaras", xe, tok.get_vocab_size(), pasos=1, lote=4, dispositivo="cpu")
+    assert next(m.parameters()).device.type == "cpu"
