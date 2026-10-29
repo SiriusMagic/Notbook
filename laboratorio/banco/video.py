@@ -11,7 +11,8 @@ El cuaderno tiene tres modelos para «inventar» un fotograma:
 - **FrameInterpolator de una entrada** (celdas 42-43): mismo modelo, pero ve 1 fotograma y dibuja el siguiente.
 
 Datos: videos de dígitos que se mueven y rebotan (como *Moving MNIST*, la prueba clásica de video), hechos con los
-dígitos de scikit-learn, 32×32 a color, 5 fotogramas por clip. Sin descargas.
+dígitos de scikit-learn, 32×32 a color, 5 fotogramas por clip. Sin descargas. Los dígitos de los clips de prueba
+salen de un grupo distinto al de entrenamiento (nunca se vieron al entrenar).
 
 Rivales:
 - **copiar**: repetir el fotograma más cercano; **promedio**: mezclar el anterior y el siguiente (sin red).
@@ -33,11 +34,20 @@ LADO = 32
 
 
 # ---------------------------------------------------------------- datos
-def clips(n: int, semilla: int = 0, fotogramas: int = 5, digitos: int = 2) -> np.ndarray:
-    """``n`` clips [n, fotogramas, 3, 32, 32] con ``digitos`` dígitos de colores que se mueven y rebotan."""
+def indices_digitos(parte: str) -> np.ndarray:
+    """Reparte los 1 797 dígitos de scikit-learn en dos grupos que no se tocan: 70 % para entrenar y 30 % para la
+    prueba. Así los dígitos de los clips de prueba nunca se vieron al entrenar."""
+    orden = np.random.default_rng(1234).permutation(1797)
+    corte = int(0.7 * len(orden))
+    return orden[:corte] if parte == "entreno" else orden[corte:]
+
+
+def clips(n: int, semilla: int = 0, fotogramas: int = 5, digitos: int = 2, parte: str = "entreno") -> np.ndarray:
+    """``n`` clips [n, fotogramas, 3, 32, 32] con ``digitos`` dígitos de colores que se mueven y rebotan, tomados
+    solo del grupo ``parte`` ("entreno" o "prueba")."""
     from sklearn.datasets import load_digits
 
-    imgs = load_digits().images / 16.0  # 8×8
+    imgs = load_digits().images[indices_digitos(parte)] / 16.0  # 8×8
     imgs = np.kron(imgs, np.ones((2, 2)))  # 16×16
     rng = np.random.default_rng(semilla)
     out = np.zeros((n, fotogramas, 3, LADO, LADO), dtype=np.float32)
@@ -211,7 +221,7 @@ MODELOS = {
 
 def competir(entreno: int = 2000, prueba: int = 300, semillas=(0, 1, 2), epocas: int = 30, dispositivo: str = "auto",
              ocultas_lstm: int = 1024, aviso=print) -> dict:
-    de, dp = clips(entreno, 0), clips(prueba, 1)
+    de, dp = clips(entreno, 0, parte="entreno"), clips(prueba, 1, parte="prueba")
     r = {"_datos": {"entreno": entreno, "prueba": prueba, "epocas": epocas, "ocultas_lstm": ocultas_lstm,
                     "semillas": len(semillas)}}
     for tarea, modelos in MODELOS.items():

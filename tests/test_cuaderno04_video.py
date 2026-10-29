@@ -37,3 +37,8 @@ def test_modelos_corren(tarea):
 def test_informe_dice_las_semillas_usadas():
     r = v.competir(entreno=8, prueba=4, semillas=(0, 1), epocas=1, ocultas_lstm=8, dispositivo="cpu", aviso=lambda *_: None)
     assert "2 semillas" in v.informe(r)
+
+
+def test_digitos_de_prueba_nunca_se_ven_al_entrenar():
+    e, p = set(v.indices_digitos("entreno")), set(v.indices_digitos("prueba"))
+    assert not (e & p) and len(e) + len(p) == 1797

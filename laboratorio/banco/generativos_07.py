@@ -167,15 +167,19 @@ def competir_dreg(entreno: int = 3000, prueba: int = 500, semillas=(0, 1, 2), pa
 
 
 # ================================================================ HCMG
-def datos_hcmg(n: int, semilla: int = 0):
-    """(borroso [n,3,16,16], clase one-hot [n,10], color [n,3], objetivo [n,3,16,16]) a partir de los dígitos."""
+def datos_hcmg(n: int, semilla: int = 0, parte: str = "entreno"):
+    """(borroso [n,3,16,16], clase one-hot [n,10], color [n,3], objetivo [n,3,16,16]) a partir de los dígitos.
+    ``parte`` elige el grupo de dígitos ("entreno" o "prueba"); los dos grupos no comparten ningún dígito."""
     import torch
     import torch.nn.functional as F
     from sklearn.datasets import load_digits
 
+    from .video import indices_digitos
+
     d = load_digits()
     rng = np.random.default_rng(semilla)
-    idx = rng.integers(0, len(d.images), n)
+    grupo = indices_digitos(parte)
+    idx = grupo[rng.integers(0, len(grupo), n)]
     img = torch.as_tensor(np.kron(d.images[idx] / 16.0, np.ones((2, 2))), dtype=torch.float32)  # [n,16,16]
     color = torch.as_tensor(rng.uniform(0.2, 1.0, (n, 3)), dtype=torch.float32)
     objetivo = img[:, None] * color[:, :, None, None] * 2 - 1  # en [-1, 1] como la salida tanh
@@ -260,8 +264,8 @@ def competir_hcmg(entreno: int = 3000, prueba: int = 500, semillas=(0, 1, 2), ep
 
     from .video import psnr, ssim
 
-    xe, ce, ke, ye = datos_hcmg(entreno, 0)
-    xp, cp, kp, yp = datos_hcmg(prueba, 1)
+    xe, ce, ke, ye = datos_hcmg(entreno, 0, "entreno")
+    xp, cp, kp, yp = datos_hcmg(prueba, 1, "prueba")
     r = {"_datos": {"entreno": entreno, "prueba": prueba, "epocas": epocas, "semillas": len(semillas)}}
     for nombre in ("hcmg", "hcmg_sin_condicion", "unet_condiciones"):
         filas = []
