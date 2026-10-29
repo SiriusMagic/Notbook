@@ -11,6 +11,7 @@ Tokenizadores:
 | ``bpe`` | Byte-Pair Encoding entrenado con los mismos textos | familia GPT, Llama, Mistral |
 | ``unigram`` | SentencePiece Unigram entrenado con los mismos textos | T5, Gemma, XLNet |
 | ``gpt4o`` | ``tiktoken`` ``o200k_base``, ya entrenado por OpenAI | GPT-4o |
+| ``rl_cuaderno`` / ``rl_arreglado`` | agente con Q-learning que decide dónde cortar (``tokenizador_rl.py``) | tu idea (celda 12) |
 
 Todos pasan el texto a minúsculas y usan **el mismo tamaño de vocabulario**
 (las 8 000 unidades más frecuentes del entrenamiento; el resto cuenta como
@@ -167,11 +168,13 @@ class GPT4o(Tokenizador):
 
 
 def tokenizadores_disponibles() -> dict[str, Tokenizador]:
+    from .tokenizador_rl import TokenizadorRL
+
     return {t.nombre: t for t in [
         PorTrozos("silabas", "sílabas por reglas del español (tu idea, corregida)", silabas),
         PorTrozos("silabas_cuaderno", "heurística original del cuaderno 01 (tu idea, tal cual)", _silabear_cuaderno),
         PorTrozos("palabras", "una palabra = un token (word2vec, fastText)", lambda w: [w]),
-        Caracteres(), BPE(), Unigram(), GPT4o(),
+        Caracteres(), BPE(), Unigram(), GPT4o(), TokenizadorRL(arreglado=False), TokenizadorRL(arreglado=True),
     ]}
 
 

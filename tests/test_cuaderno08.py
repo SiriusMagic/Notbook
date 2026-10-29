@@ -27,3 +27,12 @@ def test_votacion_ponderada_pesos_y_prediccion():
     m = _votacion_ponderada(0).fit(x, y)
     assert len(m.pesos_) == 5 and abs(sum(m.pesos_) - 1) < 1e-9
     assert (m.predict(x) == y).mean() > 0.8
+
+
+def test_stacking_del_cuaderno_completo():
+    from sklearn.datasets import make_moons
+
+    from laboratorio.banco.clasicos import _stacking
+
+    x, y = make_moons(300, noise=0.2, random_state=0)
+    assert (_stacking(0).fit(x, y).predict(x) == y).mean() > 0.8

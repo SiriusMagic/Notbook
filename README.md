@@ -2,6 +2,16 @@
 
 Cuadernos de Google Colab de varios años, ordenados y documentados.
 
+## Recomendaciones: ¿dónde usar tus piezas?
+
+Todo está en **[`RECOMENDACIONES.md`](./RECOMENDACIONES.md)**. En corto:
+
+- **Datos en tabla con ruido**: es donde mejor les va a tus piezas. La **neurona dendrítica** es la pista más fuerte (76 % contra 70 % de la red estándar; casi como Dropout). Le siguen DMNA y la genética invertida. Para un proyecto real en tablas, Gradient Boosting sigue siendo mejor (94 %).
+- **Combinar modelos**: el **stacking** recuperado de tu cuaderno completo es lo mejor en dígitos (98,5 %) y supera a la votación ponderada en 4 de 5 tareas.
+- **Corrección ortográfica**: el corrector GNN **con conexiones residuales** mejora el texto con muy pocos parámetros.
+- **Series con ciclos**: IDA y la activación seno bajan ≈ 7 % el error frente a ReLU, pero una regresión lineal les gana en esa serie. Falta probarlas con series reales.
+- **Al final del archivo**: las piezas que no están listas o dejaron mucho que desear, con el motivo de cada una.
+
 ## Contenido
 
 | Carpeta | Qué es |
@@ -16,6 +26,7 @@ Cuadernos de Google Colab de varios años, ordenados y documentados.
 |---|---|
 | `Bh1` | Base de `laboratorio-neuronal`, dividido en 9 cuadernos por tema. |
 | `Copia de B1` | Sus 18 celdas propias se añadieron a `laboratorio-neuronal`. |
+| Cuaderno completo de Drive (451 celdas, con llaves de API) | Era la versión completa de `Bh1`, ya repartida en los cuadernos 01-09. Lo único nuevo, el **sistema inmune cognitivo**, pasó al cuaderno 09. Las utilidades de Python sueltas (PDF, `async`, `__slots__`, primos) y la demo de chat con un LLM local se descartaron. Las llaves **no** se subieron. |
 | `0.1v`, `Untitled2` | Añadidos a `laboratorio-neuronal` como prototipos pequeños. |
 | `Copia de vulkan` | Convertido en `vulkan/index.html`. |
 | `Copia de Antenas`, `Copia de Untitled10` | Movidos a **atlas-rf** → `experiments/`. |

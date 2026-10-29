@@ -186,3 +186,19 @@ El modelo clásico le gana a la red en 13 de 52 comparaciones.
 - **Random Forest** en caotica_20d
 - **Gradient Boosting** en caotica_20d
 - **Votación ponderada (cuaderno 08)** en caotica_20d
+
+## Stacking (recuperado del cuaderno completo de Drive, celda 397)
+
+Una regresión logística aprende a combinar las probabilidades de 5 modelos (logística, KNN, árbol, Random Forest y SVM lineal), entrenada con validación cruzada. 5 semillas, datos de prueba.
+
+| Tarea | Red estándar | Votación ponderada (08) | Stacking | Gradient Boosting |
+|---|---|---|---|---|
+| dígitos | 97,1 % | 98,3 % | **98,5 %** | 97,2 % |
+| caótica 20D | 70,0 % | 76,3 % | 83,6 % | **94,3 %** |
+| XOR | 98,2 % | 91,0 % | 97,8 % | **99,2 %** |
+| lunas | 96,3 % | 95,0 % | **96,3 %** | 94,4 % |
+| círculos | **84,8 %** | 82,8 % | 82,9 % | 83,9 % |
+
+- Aprender a combinar los votos funciona mejor que pesarlos por exactitud: el stacking supera a la votación ponderada en 4 de 5 tareas (en la caótica, 83,6 % contra 76,3 %).
+- En dígitos es lo mejor de todo lo medido (98,5 %).
+- En datos en tabla con reglas enredadas (caótica), Gradient Boosting sigue arriba.

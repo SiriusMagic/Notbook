@@ -48,6 +48,11 @@ def main(argv=None) -> None:
                          "Gradient Boosting contra la red estándar (por defecto, las tareas pequeñas)")
     ap.add_argument("--correccion", action="store_true",
                     help="cuaderno 01: corrección ortográfica, tu GNN contra BiLSTM, Transformer y diccionario")
+    ap.add_argument("--siguiente_palabra", action="store_true",
+                    help="cuaderno 01: agente PPO que predice la siguiente palabra contra la red supervisada y bigramas")
+    ap.add_argument("--difusion", action="store_true",
+                    help="cuaderno 01: difusión de texto tal cual, con máscaras (MDLM) y Transformer autorregresivo")
+    ap.add_argument("--pasos", type=int, default=None, help="con --difusion: pasos de entrenamiento (3000 por defecto)")
     ap.add_argument("--tipo", action="append", choices=["imagen", "texto", "serie"], help="con --competencia: qué datos (se puede repetir)")
     ap.add_argument("--rapido", action="store_true", help="con --competencia: una tarea por tipo, 2 semillas y menos datos")
     ap.add_argument("--arquitectura", default="densa", choices=list(ARQUITECTURAS), help="arquitectura (sin --competencia)")
@@ -125,6 +130,23 @@ def main(argv=None) -> None:
         ruta = Path(a.salida) / "correccion.md"
         ruta.write_text(informe_correctores(r), encoding="utf-8")
         print(f"\nInforme: {ruta}")
+        return
+
+    if a.siguiente_palabra or a.difusion:
+        from . import difusion_texto, siguiente_palabra
+
+        semillas = tuple(range(a.semillas or 3))
+        if a.siguiente_palabra:
+            r = siguiente_palabra.competir(a.entreno or 5000, a.prueba or 1000, semillas, epocas=a.epocas or 30)
+            ruta = Path(a.salida) / "siguiente_palabra.md"
+            ruta.write_text(siguiente_palabra.informe(r), encoding="utf-8")
+            print(f"\nInforme: {ruta}")
+        if a.difusion:
+            r = difusion_texto.competir(a.entreno or 10000, a.prueba or 1000, semillas, pasos=a.pasos or 3000,
+                                        dispositivo=a.dispositivo)
+            ruta = Path(a.salida) / "difusion.md"
+            ruta.write_text(difusion_texto.informe(r), encoding="utf-8")
+            print(f"\nInforme: {ruta}")
         return
 
     if a.competencia:

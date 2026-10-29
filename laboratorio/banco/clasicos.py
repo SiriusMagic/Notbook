@@ -39,6 +39,7 @@ def _modelos(tipo: str, semilla: int) -> dict:
             "Random Forest": RandomForestClassifier(200, random_state=semilla, n_jobs=-1),
             "Gradient Boosting": HistGradientBoostingClassifier(random_state=semilla),
             "Votación ponderada (cuaderno 08)": _votacion_ponderada(semilla),
+            "Stacking (cuaderno completo)": _stacking(semilla),
         }
     return {
         "Ridge (lineal)": escalado(Ridge()),
@@ -85,6 +86,30 @@ def _votacion_ponderada(semilla: int):
             return self.classes_[proba.argmax(1)]
 
     return VotacionPonderada()
+
+
+def _stacking(semilla: int):
+    """Stacking de la celda 397 del cuaderno completo de Drive: 5 modelos base (logística, KNN k=7, árbol prof. 5,
+    Random Forest y SVM lineal) y una regresión logística que aprende a combinar sus probabilidades, entrenada con
+    las predicciones de validación cruzada (5 partes) para no hacer trampa. Es la versión «aprendida» de la votación
+    ponderada. Se usa ``StackingClassifier`` de scikit-learn, que hace lo mismo que el código del cuaderno."""
+    from sklearn.calibration import CalibratedClassifierCV
+    from sklearn.ensemble import RandomForestClassifier, StackingClassifier
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.model_selection import KFold
+    from sklearn.neighbors import KNeighborsClassifier
+    from sklearn.pipeline import make_pipeline
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.svm import SVC
+    from sklearn.tree import DecisionTreeClassifier
+
+    base = [("logistica", make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000))),
+            ("knn", make_pipeline(StandardScaler(), KNeighborsClassifier(7))),
+            ("arbol", DecisionTreeClassifier(max_depth=5, random_state=semilla)),
+            ("bosque", RandomForestClassifier(100, random_state=semilla, n_jobs=-1)),
+            ("svm", make_pipeline(StandardScaler(), CalibratedClassifierCV(SVC(kernel="linear"), ensemble=False)))]
+    return StackingClassifier(base, final_estimator=LogisticRegression(max_iter=2000),
+                              cv=KFold(5, shuffle=True, random_state=semilla), stack_method="predict_proba")
 
 
 def _medir(tipo: str, y, pred) -> float:

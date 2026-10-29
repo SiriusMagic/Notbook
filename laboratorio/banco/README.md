@@ -2,6 +2,8 @@
 
 El cuaderno 02 tiene decenas de experimentos «mi idea contra RedEstandar». Cada uno se probó **una vez**, con una sola semilla y midiendo sobre los mismos datos de entrenamiento. Así no se puede saber si una idea es mejor o si tuvo suerte.
 
+Las recomendaciones por campo (dónde conviene usar cada pieza y cuáles no están listas) están en [`RECOMENDACIONES.md`](../../RECOMENDACIONES.md).
+
 Este banco las mide a todas igual:
 
 - **Mismas tareas**: las que ya usan los cuadernos, con datos fijos y una parte de **prueba** que la red nunca ve al entrenar.
@@ -63,6 +65,14 @@ python -m laboratorio.banco --competencia --tipo texto           # agentes de at
   - tu atención «hebbiana» (celda 33).
 
   Compiten contra la mejor arquitectura normal y se mide qué parte del texto leen. En el cuaderno, el clasificador y los embeddings no se entrenaban; aquí sí, y REINFORCE usa línea base.
+
+### Parte generativa y de refuerzo
+
+Informe: [`resultados-01-generativos.md`](resultados-01-generativos.md). Comandos `--siguiente_palabra` y `--difusion`; el tokenizador con refuerzo entra en `--tokenizadores`.
+
+- **«Agente PPO»**: predice la siguiente palabra (no segmenta). Acierta 9-12 % contra 16,7 % de la misma red supervisada y del conteo de pares; termina respondiendo casi siempre la misma palabra.
+- **Tokenizador con refuerzo**: tal cual corta casi letra por letra (su «calidad» es al azar); arreglado corta casi como BPE, sin ventaja.
+- **Difusión de texto**: tal cual solo repite una palabra (el ruido es casi nulo y genera desde [MASK], que nunca vio). Con máscaras (como MDLM/LLaDA) genera palabras variadas, pero el Transformer autorregresivo gana (perplejidad 263 contra 803).
 
 ## Mediciones de hardware y por dentro (todas las competencias)
 
@@ -398,6 +408,8 @@ Informe completo: [`resultados-08.md`](resultados-08.md).
 - **Pista para invertir**: la neurona dendrítica y DMNA regularizan casi tan bien como Dropout. Vale la pena compararlas directamente con Dropout en datos reales en tabla.
 
 **Votación ponderada**: gana a la red en dígitos y en la tarea caótica (76 % contra 70 %), pero pierde en 3 de las tareas pequeñas. Siempre queda por debajo de Gradient Boosting.
+
+**Stacking** (recuperado del cuaderno completo de Drive): una regresión logística aprende a combinar los votos. Supera a la votación ponderada en 4 de 5 tareas (caótica 83,6 % contra 76,3 %) y es lo mejor en dígitos (98,5 %). Detalle en `resultados-08.md`.
 
 Limpieza del cuaderno 08 (de 15 a 7 celdas):
 - Se quitaron los generadores de series sintéticas, que ya están en `laboratorio/series.py`.
