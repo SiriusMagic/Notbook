@@ -22,6 +22,13 @@ Ojos abiertos:
 - Una red estándar de solo 8 neuronas llega a 75,6 % en esta misma tarea. Parte de la ventaja viene de frenar la memorización, y eso también se logra achicando la red.
 - En datos en tabla la industria usa árboles: **Gradient Boosting llega a 94 %**, muy por encima de cualquier red. Para un proyecto real en tablas, empieza por Gradient Boosting.
 
+### Combinar varios modelos (ensambles)
+
+| Pieza | Resultado | Recomendación |
+|---|---|---|
+| **Stacking** (recuperado de tu cuaderno completo) | Lo mejor en dígitos (98,5 %); en la tarea caótica 83,6 % (red estándar 70,0 %) | **Recomendado** cuando ya tienes varios modelos y quieres juntarlos. Supera a la votación ponderada en 4 de 5 tareas. |
+| Votación ponderada (08) | 98,3 % en dígitos y 76,3 % en la caótica, pero pierde en XOR, lunas y círculos | Usa el stacking en su lugar: es la versión que aprende los pesos. |
+
 ### Corrección ortográfica de texto
 
 | Pieza | Resultado | Recomendación |
@@ -46,7 +53,7 @@ Ojos abiertos:
 
 | Pieza | Resultado | Recomendación |
 |---|---|---|
-| **Difusión de texto con máscaras** (01, arreglada; como MDLM/LLaDA) | Genera palabras variadas y rellena huecos, pero el Transformer autorregresivo (como GPT) del mismo tamaño gana (perplejidad 263 contra 803) | Úsala solo si necesitas **rellenar huecos en medio de un texto**, algo que un modelo palabra por palabra no hace. Para escribir texto de corrido, usa un Transformer autorregresivo. Necesita GPU y mucho más entrenamiento para competir. |
+| **Difusión de texto con máscaras** (01: tu versión de la celda 127 y la arreglada como MDLM/LLaDA) | Tu versión rellena huecos igual que la de la industria (3,0 % contra 3,4 %); para generar hay que sortear las palabras en vez de elegir siempre la más probable. Genera palabras variadas, pero el Transformer autorregresivo (como GPT) del mismo tamaño gana (perplejidad 263 contra 803) | Úsala solo si necesitas **rellenar huecos en medio de un texto**, algo que un modelo palabra por palabra no hace. Para escribir texto de corrido, usa un Transformer autorregresivo. Necesita GPU y mucho más entrenamiento para competir. |
 
 ## 2. Neutras: no ayudan, pero tampoco dañan
 

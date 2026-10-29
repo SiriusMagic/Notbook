@@ -409,6 +409,8 @@ Informe completo: [`resultados-08.md`](resultados-08.md).
 
 **Votación ponderada**: gana a la red en dígitos y en la tarea caótica (76 % contra 70 %), pero pierde en 3 de las tareas pequeñas. Siempre queda por debajo de Gradient Boosting.
 
+**Stacking** (recuperado del cuaderno completo de Drive): una regresión logística aprende a combinar los votos. Supera a la votación ponderada en 4 de 5 tareas (caótica 83,6 % contra 76,3 %) y es lo mejor en dígitos (98,5 %). Detalle en `resultados-08.md`.
+
 Limpieza del cuaderno 08 (de 15 a 7 celdas):
 - Se quitaron los generadores de series sintéticas, que ya están en `laboratorio/series.py`.
 - Se quitaron el planificador de tasa de aprendizaje (es `ReduceLROnPlateau`) y la «optimización adaptativa basada en error», que dependía de la neurona DC ya borrada del cuaderno 03.

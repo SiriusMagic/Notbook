@@ -12,7 +12,7 @@ python -m laboratorio.banco --tokenizadores --tarea resenas_es                  
 
 - **El «agente PPO» no segmenta: predice la siguiente palabra, y lo hace peor que lo normal.** Una red entrenada de forma supervisada (o contar pares de palabras) acierta 16,7 %; PPO, 9-12 %, y termina respondiendo casi siempre la misma palabra. Para predecir texto, el refuerzo no conviene: solo dice «acertaste / no», mientras que lo supervisado dice cuál era la palabra correcta.
 - **El tokenizador con refuerzo, tal cual, corta casi letra por letra** (3,7 tokens por palabra), porque su «calidad» es un número al azar. Con una recompensa real (pocos tokens que se repitan) corta casi igual que BPE (1,2 tokens por palabra), pero con 6 veces más desconocidas. No aporta nada sobre BPE.
-- **La difusión de texto del cuaderno no aprende a generar**: el ruido es tan pequeño que solo aprende a copiar, y al generar desde [MASK] repite una palabra («sirve sirve sirve…»). La versión con máscaras (como MDLM y LLaDA) sí genera palabras variadas y rellena huecos, pero con este tamaño y entrenamiento el Transformer autorregresivo (como GPT) gana con claridad (perplejidad 263 contra 803). La difusión de texto necesita modelos y entrenamientos mucho más grandes (GPU) para competir.
+- **La difusión de texto del cuaderno no aprende a generar**: el ruido es tan pequeño que solo aprende a copiar, y al generar desde [MASK] repite una palabra («sirve sirve sirve…»). Tu otra versión (celda 127 del cuaderno completo) ya usaba máscaras y rellena huecos igual que la de la industria. La versión con máscaras (como MDLM y LLaDA) sí genera palabras variadas y rellena huecos, pero con este tamaño y entrenamiento el Transformer autorregresivo (como GPT) gana con claridad (perplejidad 263 contra 803). La difusión de texto necesita modelos y entrenamientos mucho más grandes (GPU) para competir.
 
 ## 1. Siguiente palabra (`--siguiente_palabra`)
 
@@ -50,11 +50,14 @@ Reseñas reales en español: 5 000 para entrenar y 500 de prueba, cortadas en 32
 
 | Modelo | Rellena 15 % tapado | Rellena 50 % tapado | Perplejidad (menos es mejor) | Parámetros |
 |---|---|---|---|---|
-| difusión del cuaderno (tal cual) | 0,5 % ± 0,2 % | 0,4 % ± 0,1 % | — | 1 435,424 |
-| difusión con máscaras (arreglo, como MDLM/LLaDA) | 3,4 % ± 0,5 % | 2,9 % ± 0,3 % | 803 ± 19 | 1 435,424 |
-| Transformer autorregresivo (como GPT) | — | — | 263 ± 1 | 1 435,424 |
+| difusión del cuaderno (tal cual) | 0,5 % ± 0,2 % | 0,4 % ± 0,1 % | — | 1 435 424 |
+| **tu difusión con máscaras** (celda 127 del cuaderno completo) | 3,0 % ± 1,1 % | 3,0 % ± 0,5 % | — | 1 435 424 |
+| difusión con máscaras (arreglo, como MDLM/LLaDA) | 3,4 % ± 0,5 % | 2,9 % ± 0,3 % | 803 ± 19 | 1 435 424 |
+| Transformer autorregresivo (como GPT) | — | — | 263 ± 1 | 1 435 424 |
 
 La perplejidad de la difusión con máscaras es una cota superior (la real puede ser menor). La difusión del cuaderno no define una probabilidad, así que no tiene perplejidad.
+
+**Tu otra versión** (recuperada del cuaderno completo de Drive) ya tapaba palabras con [MASK], la misma idea que MDLM y LLaDA, y **rellena huecos igual de bien que la versión de la industria** (3,0 % contra 3,4 % y 2,9 %: empate dentro del ruido). Su punto débil es generar: elige siempre la palabra más probable y se queda repitiendo («que de que de…»). Con muestreo al azar, como MDLM, generaría palabras variadas. Su pérdida tampoco tiene la forma de MDLM, así que no da una perplejidad comparable.
 
 ## Ejemplos generados (semilla 0)
 
@@ -62,6 +65,9 @@ La perplejidad de la difusión con máscaras es una cota superior (la real puede
 - «sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve»
 - «sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve»
 - «sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve sirve»
+
+**tu difusión con máscaras (celda 127)**:
+- «no que que que de que de de que que que de de de que que que que que» (las 3 muestras iguales: elige siempre la más probable)
 
 **difusión con máscaras (arreglo, como MDLM/LLaDA)**:
 - «sin pend" ni bateriaco, embalaje al lo dos a calidad en y unador se estetro»
