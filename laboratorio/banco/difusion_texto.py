@@ -36,10 +36,11 @@ PAD, MASK, BOS = 0, 1, 2
 
 def preparar(textos_e: list[str], textos_p: list[str], vocabulario: int = 4000, largo: int = 32):
     """BPE entrenado con las reseñas; secuencias de ``largo`` tokens: [BOS] + texto, relleno con PAD."""
-    from tokenizers import Tokenizer, models, pre_tokenizers, trainers
+    from tokenizers import Tokenizer, decoders, models, pre_tokenizers, trainers
 
     tok = Tokenizer(models.BPE(unk_token="[UNK]"))
     tok.pre_tokenizer = pre_tokenizers.Metaspace()
+    tok.decoder = decoders.Metaspace()
     tok.train_from_iterator((t.lower() for t in textos_e), trainer=trainers.BpeTrainer(
         vocab_size=vocabulario, special_tokens=["[PAD]", "[MASK]", "[BOS]", "[UNK]"], show_progress=False))
 
@@ -87,16 +88,17 @@ def entrenar(modo: str, xe: np.ndarray, v: int, semilla: int = 0, pasos: int = 3
     torch.manual_seed(semilla)
     rng = np.random.default_rng(semilla)
     largo = xe.shape[1]
-    m = _modelo(v, largo, pasos_t=pasos_t)
+    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    m = _modelo(v, largo, pasos_t=pasos_t).to(dev)
     opt = torch.optim.AdamW(m.parameters(), lr=lr)
     for _ in range(pasos):
-        x = torch.as_tensor(xe[rng.integers(0, len(xe), lote)])
+        x = torch.as_tensor(xe[rng.integers(0, len(xe), lote)], device=dev)
         real = x != PAD
         if modo == "autorregresivo":
             logits = m(m.emb(x[:, :-1]), causal=True)
             perdida = nn.functional.cross_entropy(logits.reshape(-1, v), x[:, 1:].reshape(-1), ignore_index=PAD)
         elif modo == "difusion_cuaderno":
-            t = torch.randint(0, pasos_t, (lote,))
+            t = torch.randint(0, pasos_t, (lote,), device=dev)
             with torch.no_grad():  # tal cual: los embeddings no reciben gradiente
                 e = m.emb(x)
             beta = 0.0001 + t.float() * (0.01 - 0.0001) / (pasos_t - 1)
@@ -104,8 +106,8 @@ def entrenar(modo: str, xe: np.ndarray, v: int, semilla: int = 0, pasos: int = 3
             logits = m(ruidoso, t, relleno=~real)
             perdida = nn.functional.cross_entropy(logits.reshape(-1, v), x.reshape(-1), ignore_index=PAD)
         else:  # difusión con máscaras (MDLM): tapar una fracción t, pérdida pesada por 1/t sobre lo tapado
-            t = torch.rand(lote).clamp(min=1e-3)
-            tapar = (torch.rand(x.shape) < t.view(-1, 1)) & real
+            t = torch.rand(lote, device=dev).clamp(min=1e-3)
+            tapar = (torch.rand(x.shape, device=dev) < t.view(-1, 1)) & real
             tapar[:, 0] = False  # el [BOS] queda visible
             xr = x.masked_fill(tapar, MASK)
             logits = m(m.emb(xr), (t * pasos_t).long())
@@ -122,15 +124,17 @@ def rellenar(m, modo: str, xp: np.ndarray, fraccion: float, semilla: int = 0, pa
     """Tapa ``fraccion`` de los tokens reales (no el [BOS]) y mide cuántos acierta el modelo de una pasada."""
     import torch
 
+    dev = next(m.parameters()).device
     g = torch.Generator().manual_seed(semilla)
     x = torch.as_tensor(xp)
     real = x != PAD
     tapar = (torch.rand(x.shape, generator=g) < fraccion) & real
+    x, real, tapar = x.to(dev), real.to(dev), tapar.to(dev)
     tapar[:, 0] = False
     xr = x.masked_fill(tapar, MASK)
     m.eval()
     with torch.no_grad():
-        t = torch.full((len(x),), (pasos_t - 1) if modo == "difusion_cuaderno" else int(fraccion * pasos_t))
+        t = torch.full((len(x),), (pasos_t - 1) if modo == "difusion_cuaderno" else int(fraccion * pasos_t), device=dev)
         pred = m(m.emb(xr), t, relleno=~real if modo == "difusion_cuaderno" else None).argmax(-1)
     return float((pred[tapar] == x[tapar]).float().mean())
 
@@ -139,7 +143,8 @@ def perplejidad(m, modo: str, xp: np.ndarray, semilla: int = 0, muestras: int = 
     import torch
     from torch import nn
 
-    x = torch.as_tensor(xp)
+    dev = next(m.parameters()).device
+    x = torch.as_tensor(xp, device=dev)
     real = x != PAD
     v = m.salida.out_features
     m.eval()
@@ -154,8 +159,8 @@ def perplejidad(m, modo: str, xp: np.ndarray, semilla: int = 0, muestras: int = 
         g = torch.Generator().manual_seed(semilla)
         total = 0.0
         for _ in range(muestras):  # cota de MDLM: E_t [ (1/t) · Σ CE en los tapados ]
-            t = torch.rand(len(x), generator=g).clamp(min=1e-3)
-            tapar = (torch.rand(x.shape, generator=g) < t.view(-1, 1)) & real
+            t = torch.rand(len(x), generator=g).clamp(min=1e-3).to(dev)
+            tapar = (torch.rand(x.shape, generator=g).to(dev) < t.view(-1, 1)) & real
             tapar[:, 0] = False
             logits = m(m.emb(x.masked_fill(tapar, MASK)), (t * pasos_t).long())
             ce = nn.functional.cross_entropy(logits.reshape(-1, v), x.reshape(-1), reduction="none").view(x.shape)
@@ -168,27 +173,28 @@ def generar(m, modo: str, tok, n: int = 3, largo: int = 20, semilla: int = 0, pa
     import torch
 
     torch.manual_seed(semilla)
+    dev = next(m.parameters()).device
     m.eval()
     with torch.no_grad():
         if modo == "autorregresivo":
-            x = torch.full((n, 1), BOS)
+            x = torch.full((n, 1), BOS, device=dev)
             for _ in range(largo - 1):
                 p = torch.softmax(m(m.emb(x), causal=True)[:, -1], -1)
                 x = torch.cat([x, torch.multinomial(p, 1)], 1)
         else:
-            x = torch.full((n, largo), MASK)
+            x = torch.full((n, largo), MASK, device=dev)
             x[:, 0] = BOS
             for paso in range(pasos_t, 0, -1):
-                t = torch.full((n,), paso if modo == "difusion_mascaras" else paso - 1)
+                t = torch.full((n,), paso if modo == "difusion_mascaras" else paso - 1, device=dev)
                 logits = m(m.emb(x), t)
                 if modo == "difusion_cuaderno":  # tal cual: reemplaza todo por la palabra más probable
                     x = logits.argmax(-1)
                     continue
                 tapado = x == MASK
                 nuevo = torch.distributions.Categorical(logits=logits).sample()
-                destapar = tapado & (torch.rand(x.shape) < 1 / paso)  # destapa ≈ 1/paso de lo que queda
+                destapar = tapado & (torch.rand(x.shape, device=dev) < 1 / paso)  # destapa ≈ 1/paso de lo que queda
                 x = torch.where(destapar, nuevo, x)
-    return [tok.decode([i for i in fila.tolist() if i > 3]) for fila in x]
+    return [tok.decode([i for i in fila.tolist() if i > 3]) for fila in x.cpu()]
 
 
 def competir(entreno: int = 10000, prueba: int = 1000, semillas=(0, 1, 2), pasos: int = 3000) -> dict:
