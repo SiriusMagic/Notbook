@@ -7,8 +7,11 @@ de las recompensas que vienen después.
 Qué se compara (mismo modelo actor de 2 capas, mismos datos: reseñas reales en español):
 
 - ``ppo_cuaderno``: PPO tal cual (gamma 0,99, retornos normalizados, ventaja = retorno − crítico, 4 épocas, clip 0,2).
-- ``ppo_arreglado``: PPO con ``gamma = 0``. La palabra siguiente no depende de lo que el agente predijo, así que
-  sumar recompensas futuras solo agrega ruido: el mérito de cada predicción es su propia recompensa.
+- ``ppo_arreglado``: PPO con ``gamma = 0`` (variante). La palabra siguiente no depende de lo que el agente predijo,
+  así que sumar recompensas futuras solo agrega ruido. **Resultado: no ayuda.** El problema de fondo es otro: con
+  +1 solo si acierta la palabra exacta entre 2 000, la política se cierra en la palabra más frecuente y deja de
+  explorar (las dos versiones de PPO terminan respondiendo casi siempre lo mismo). La red supervisada, en cambio,
+  recibe en cada paso cuál era la palabra correcta, no solo «acertaste o no».
 - ``supervisado``: la misma red entrenada con entropía cruzada (lo que hace cualquier modelo de lenguaje).
 - ``bigramas``: contar qué palabra sigue a cada palabra (sin red; la base clásica).
 
@@ -153,12 +156,16 @@ def informe(r: dict) -> str:
              f"({d['desconocidas_prueba']:.0%} de las palabras de prueba son desconocidas).", "",
              "| Modelo | Acierto (top-1) | Entre las 5 primeras | Perplejidad (menos es mejor) |", "|---|---|---|---|"]
     nombres = {"bigramas": "conteo de pares de palabras (clásico)", "supervisado": "misma red, supervisada (industria)",
-               "ppo_arreglado": "PPO con gamma = 0 (arreglo)", "ppo_cuaderno": "PPO tal cual (gamma = 0,99)"}
+               "ppo_arreglado": "PPO con gamma = 0 (variante)", "ppo_cuaderno": "PPO tal cual (gamma = 0,99)"}
     for k, nombre in nombres.items():
         vs = r[k]
         def f(m, pct=True):
             a = np.array([v[m] for v in vs])
+            if not pct and a.mean() > 1e5:
+                return "enorme (casi siempre la misma palabra)"
             s = f"{a.mean():.1%}" if pct else f"{a.mean():.0f}"
             return s + (f" ± {a.std():.1%}" if pct and len(a) > 1 else (f" ± {a.std():.0f}" if len(a) > 1 else ""))
         filas.append(f"| {nombre} | {f('top1')} | {f('top5')} | {f('perplejidad', False)} |")
+    filas += ["", "PPO solo recibe «acertaste / no acertaste»; la red supervisada recibe la palabra correcta en cada paso. "
+              "Con 2 000 palabras posibles, PPO se queda con la más frecuente y deja de explorar."]
     return "\n".join(filas) + "\n"
