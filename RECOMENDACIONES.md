@@ -2,7 +2,7 @@
 
 Resumen de todo lo que se midió en el banco de evaluación (`laboratorio/banco/`). Cada pieza se probó con 5 semillas, con datos de **prueba** que la red no vio al entrenar, contra la red estándar y contra la tecnología de la industria. Los detalles están en [`laboratorio/banco/informes/`](./laboratorio/banco/informes), y el cuaderno `laboratorio-neuronal/12_como_funciona_cada_pieza.ipynb` explica cómo funciona cada una.
 
-> **Regla de oro.** Ninguna pieza tuya le gana hoy a la tecnología de la industria con datos que la red nunca vio. Lo más cerca son las **tripletas con flujo** (video), que ya empatan con la U-Net usando 19 veces menos parámetros, y el **stacking**, que es lo mejor medido en dígitos. Lo demás son **pistas para seguir investigando** en un campo concreto, no piezas listas para producción. Antes de invertir en una, debe ganarle también a la red estándar **de su mejor tamaño** (a veces una red más chica rinde más) y a lo que usa la industria en ese campo.
+> **Regla de oro.** Con datos que la red nunca vio, **dos ideas tuyas ya están a la par o por encima de la industria**: el **tokenizador de sílabas** le gana a BPE al clasificar reseñas (en las 8 semillas), y las **tripletas con flujo** empatan con la U-Net usando 19 veces menos parámetros. Cerca están la **base radial selectiva** (pasa a Dropout en 4 de 5 semillas) y el **stacking**, que es lo mejor medido en dígitos. Lo demás son **pistas para seguir investigando** en un campo concreto, no piezas listas para producción. Antes de invertir en una, debe ganarle también a la red estándar **de su mejor tamaño** (a veces una red más chica rinde más) y a lo que usa la industria en ese campo.
 
 ## 1. Recomendadas por campo
 
@@ -24,7 +24,8 @@ Es el campo donde mejor les fue a tus piezas. Ahí la red estándar memoriza (ac
 |---|---|---|
 | **Neurona dendrítica** (02) | 76,1 % (red estándar: 70,0 %) | **La pista más fuerte.** Casi iguala a Dropout (77,4 %) con los mismos parámetros. Úsala como capa que regulariza en redes para datos en tabla. Próximo paso: compararla con Dropout en tablas reales. |
 | **DMNA** (02) | 72,2 % | Ruido que depende de la pérdida. Ayuda poco, pero no daña. Sirve como alternativa a Dropout cuando conviene un ruido que se apague solo con el tiempo. |
-| **Base radial entrenable** (03, reparada: antes neuronas KNN) | 76,9 % (red estándar: 70,5 %) | **Tan fuerte como la dendrítica**, ver sección 4. Probarla con tablas reales. |
+| **Base radial selectiva** (03, mejorada: antes neuronas KNN) | **78,9 %** (red estándar: 70,5 %; Dropout: 77,4 %) | **Tu mejor capa para tablas con ruido.** Le gana a Dropout en 4 de 5 semillas (sin diferencia significativa todavía) y, a diferencia de Dropout, no daña en regresión. No la mezcles con Dropout: juntas rinden menos. Próximo paso: tablas reales. |
+| Base radial entrenable (03, reparada) | 76,9 % | La versión sin selección de columnas. |
 | **Genética invertida** (03, arreglada) | 72,2 % | Recicla las neuronas que no se usan (como ReDo, 2023). Conviene en **redes grandes con muchas neuronas muertas**: en redes chicas no hay mucho que reciclar. |
 
 Ojos abiertos:
@@ -42,7 +43,7 @@ Ojos abiertos:
 
 | Pieza | Resultado | Recomendación |
 |---|---|---|
-| **Corrector GNN con conexiones residuales** (01) | Baja las letras mal de 12,6 % a 10,8 %; el diccionario clásico (Norvig/SymSpell) llega a 6,7 % | **Recomendado para corregir errores de letras** en textos cortos, donde un modelo grande sería caro. Sin conexiones residuales olvida la letra original y empeora el texto: usa siempre la versión con residuales. Falta medirlo en Colab con GPU contra la BiLSTM y el Transformer de letras (cuaderno 11). |
+| **Corrector GNN con conexiones residuales** (01) | Baja las letras mal de 12,6 % a 11,0 %; el diccionario clásico (Norvig/SymSpell) llega a 6,6 %, y el híbrido diccionario + GNN a 6,8 % (empata: la red no le suma) | **Recomendado para corregir errores de letras** en textos cortos, donde un modelo grande sería caro. Sin conexiones residuales olvida la letra original y empeora el texto: usa siempre la versión con residuales. Falta medirlo en Colab con GPU contra la BiLSTM y el Transformer de letras (cuaderno 11). |
 
 ### Series de tiempo periódicas (ondas, ciclos)
 
@@ -55,7 +56,7 @@ Ojos abiertos:
 
 | Pieza | Resultado | Recomendación |
 |---|---|---|
-| **Sílabas por reglas** (01) | 2 tokens por palabra, 0,4 % de desconocidas. Al clasificar reseñas con una CNN: **39,9 %** contra 35,2 % de BPE y 34,7 % de GPT-4o (sin diferencia significativa con 2 semillas) | Interesante para el español **con pocos datos**: respeta la pronunciación y rinde igual o un poco mejor que BPE. Con muchos datos y modelos grandes, BPE da secuencias más cortas (1,2 tokens por palabra). Falta medir con el Transformer en GPU (cuaderno 13). |
+| **Sílabas por reglas** (01) | **Le ganan a BPE**: 40,0 % contra 35,8 % con 3 000 reseñas (5 semillas, significativo) y 45,0 % contra 41,5 % con 12 000; ganan en las 8 semillas. 2 tokens por palabra | **Recomendadas para clasificar texto en español con pocos o medianos datos.** Respetan la pronunciación y se repiten mucho más que los trozos de BPE. Las letras sueltas aciertan 1 punto más, pero con secuencias 2,2 veces más largas. No juntes sílabas para acortar (sílabas + BPE pierde la ventaja). Falta medir con el Transformer en GPU (cuaderno 13). |
 | **Segmentador BiLSTM de sílabas** (01) | 99,2 % de palabras exactas (pyphen: 71,1 %) | Recomendado si se quiere silabear aprendiendo de ejemplos (otro idioma, nombres raros). Para el español, las reglas escritas a mano son igual de exactas y 80 veces más rápidas. |
 | **Tokenizador con refuerzo, arreglado** (01) | Corta casi igual que BPE (1,23 contra 1,19 tokens por palabra), con 6 veces más desconocidas | Funciona, pero no aporta nada sobre BPE, que es más rápido y está probado. Solo como experimento. |
 
@@ -136,10 +137,11 @@ La lección: casi todas fallaban por tener algo **fijo o duro** (umbral, amplifi
 
 Ordenadas por lo que más podría rendir con lo que ya está medido.
 
-1. **Tripletas con flujo en video real** (UCF101, Vimeo-90k) y a mayor resolución, contra RIFE. Con dígitos ya le ganan a la U-Net con 19 veces menos parámetros (sección 1).
-2. **Base radial + dendrítica + stacking para tablas**: las tres piezas que mejor rinden en datos con ruido, juntas como modelos base de un stacking, contra Gradient Boosting en tablas reales (OpenML).
-3. **Router troncal + mini-expertos LoRA** (cuaderno 14): un clasificador pequeño elige qué adaptador LoRA de oficio usar. Falta medir en GPU si el router con LoRA supera a un solo LoRA para todos los oficios.
-4. **Corrector híbrido**: el diccionario propone candidatos y el GNN con residuales elige según el contexto. Hoy el diccionario solo corrige mejor que la red (CER 0,067 contra 0,108 en sustituciones), y los dos juntos podrían sumar.
-5. **Tokenizador de sílabas + BPE**: cortar en sílabas con la BiLSTM (99,2 % de palabras exactas) y aplicar BPE sobre las sílabas, para que los tokens respeten la pronunciación sin tener tantas desconocidas.
-6. **Difusión por bloques**: tu difusión con máscaras para rellenar huecos, y un Transformer autorregresivo para escribir de corrido, en un mismo modelo (como *Block Diffusion*, 2025).
-7. **DANN para reseñas de otra tienda**: entrenar con reseñas de Amazon y adaptar, sin etiquetas, a reseñas de otro sitio.
+1. **Sílabas con el Transformer y con modelos grandes** (cuaderno 13): ya le ganan a BPE con una CNN; falta ver si se sostiene con un Transformer y con 100 000 reseñas.
+2. **Tripletas con flujo en video real** (UCF101, Vimeo-90k) y a mayor resolución, contra RIFE. Con dígitos ya le ganan a la U-Net con 19 veces menos parámetros (sección 1).
+3. **Base radial selectiva + dendrítica + stacking para tablas**: las tres piezas que mejor rinden en datos con ruido, juntas como modelos base de un stacking, contra Gradient Boosting en tablas reales (OpenML).
+4. **Router troncal + mini-expertos LoRA** (cuaderno 14): un clasificador pequeño elige qué adaptador LoRA de oficio usar. Falta medir en GPU si el router con LoRA supera a un solo LoRA para todos los oficios.
+5. **Corrector con contexto de palabras**: el híbrido diccionario + GNN ya se probó y empata con el diccionario (6,8 % contra 6,6 %), porque el GNN solo ve letras. Para ganarle hace falta un modelo que vea las palabras vecinas (un Transformer pequeño de palabras que elija entre las candidatas del diccionario).
+6. **Sílabas en modelos de lenguaje**: el BPE sobre sílabas ya se probó y pierde la ventaja al clasificar; queda probar las sílabas para generar texto (difusión y GPT pequeño), donde secuencias más largas cuestan más.
+7. **Difusión por bloques**: tu difusión con máscaras para rellenar huecos, y un Transformer autorregresivo para escribir de corrido, en un mismo modelo (como *Block Diffusion*, 2025).
+8. **DANN para reseñas de otra tienda**: entrenar con reseñas de Amazon y adaptar, sin etiquetas, a reseñas de otro sitio.

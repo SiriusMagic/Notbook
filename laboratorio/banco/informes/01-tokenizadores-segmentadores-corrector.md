@@ -4,25 +4,51 @@ Medido en CPU con reseñas reales en español (`resenas_es`): 3 000 para entrena
 
 ## Conclusión
 
-- **Tokenizadores: con pocos datos, cortar fino ayuda un poco.** Tus sílabas aciertan 39,9 % al clasificar el puntaje de las reseñas (5 clases; al azar, 20 %); BPE de la industria, 35,2 %. Las letras sueltas (40,6 %) y tu tokenizador con refuerzo tal cual (40,3 %, que corta casi letra por letra) quedan igual de arriba. Con 2 semillas **ninguna diferencia es significativa**: es una pista, no una victoria. Con muchos datos y modelos grandes, la industria usa BPE porque las secuencias son más cortas (1,2 tokens por palabra contra 2,0 de las sílabas).
+- **Tokenizadores: tus sílabas le ganan a BPE de la industria.** Al clasificar el puntaje de las reseñas (5 clases; al azar, 20 %) aciertan **40,0 % contra 35,8 %** con 3 000 reseñas (5 semillas, significativo) y **45,0 % contra 41,5 %** con 12 000 (3 semillas). Ganan en las 8 semillas. La razón: cortar más fino ayuda cuando hay pocos datos, porque las sílabas se repiten mucho más que las palabras o los trozos de BPE. Las letras sueltas ganan por un punto más, pero con secuencias 2,2 veces más largas (más lentas). Las sílabas son el punto medio. Probé dos mejoras que juntan sílabas para acortar (sílabas + BPE, y palabras frecuentes enteras): quedan entre BPE y las sílabas, así que juntar le quita la ventaja.
 - **Segmentadores: tu BiLSTM de sílabas acierta 99,2 % de las palabras**, mucho más que pyphen (71,1 %, la librería que usan LibreOffice y TeX) y que la heurística original del cuaderno (59,4 %). Las reglas escritas a mano llegan a 100 % y son 80 veces más rápidas, así que la red solo vale la pena si se quiere aprender de ejemplos (otro idioma, nombres raros).
-- **Corrector (medición parcial):** con solo letras cambiadas, tu GNN con conexiones residuales deja el texto en 10,8 % de letras mal (sin corregir: 12,6 %). El diccionario estilo Norvig/SymSpell llega a 6,7 %. Sin residuales el GNN empeora el texto (43,6 %) y con refuerzo, como en el cuaderno, lo destruye (94,1 %). Falta la BiLSTM, el Transformer y el escenario con todos los errores: en CPU tardaba más de 2 horas, va en el cuaderno 13 (GPU).
+- **Corrector:** con solo letras cambiadas, tu GNN con conexiones residuales deja el texto en 11,0 % de letras mal (sin corregir: 12,6 %), y el diccionario estilo Norvig/SymSpell en 6,6 %. La mejora **híbrida** (el diccionario decide qué palabras están mal y la red elige por cuál cambiarlas) llega a 6,8 %: empata con el diccionario, pero **la red no le suma**. Con todos los tipos de error pasa lo mismo (10,2 % contra 10,1 %). Para que un corrector le gane al diccionario hace falta contexto de palabras, no de letras. Falta la BiLSTM y el Transformer en GPU (cuaderno 13).
 
 ## 1. Tokenizadores: clasificar reseñas con la misma red (CNN de texto)
 
-Todos en minúsculas y con el mismo vocabulario (8 000 unidades); solo cambia cómo se corta el texto. 15 épocas, 2 semillas. El Transformer y las posiciones jerárquicas van en el cuaderno 13 (GPU).
+Todos en minúsculas y con el mismo vocabulario (8 000 unidades); solo cambia cómo se corta el texto. 15 épocas. Se compara con BPE semilla por semilla (mismos datos y mismo inicio de la red). El Transformer y las posiciones jerárquicas van en el cuaderno 13 (GPU).
 
-| Tokenizador | Acierto al clasificar (2 semillas) | Tokens por palabra | Desconocidas |
+### 3 000 reseñas para entrenar, 1 000 de prueba, 5 semillas
+
+| Tokenizador | Acierto | Le gana a BPE en… | Tokens por palabra | Desconocidas |
+|---|---|---|---|---|
+| letras sueltas | 41,9 ± 1,7 % | 5 de 5 semillas | 4,50 | 0,01 % |
+| **sílabas por reglas** (tuya) | 40,0 ± 1,6 % | 5 de 5 semillas | 2,00 | 0,40 % |
+| palabras frecuentes enteras + sílabas (mejora) | 38,0 ± 1,6 % | 4 de 5 semillas | 1,34 | 0,74 % |
+| sílabas + BPE (mejora: junta sílabas frecuentes) | 37,6 ± 1,0 % | 5 de 5 semillas | 1,26 | 1,79 % |
+| Unigram (industria: T5, Gemma) | 37,4 ± 1,7 % | 5 de 5 semillas | 1,24 | 0,24 % |
+| BPE (industria: GPT-2, Llama) | 35,8 ± 1,6 % | — | 1,19 | 0,44 % |
+
+Con 5 semillas la ventaja de tus sílabas sobre BPE es **significativa** (prueba t pareada corregida por comparaciones múltiples).
+
+### 12 000 reseñas para entrenar, 2 000 de prueba, 3 semillas
+
+| Tokenizador | Acierto | Le gana a BPE en… | Tokens por palabra | Desconocidas |
+|---|---|---|---|---|
+| letras sueltas | 45,6 ± 0,7 % | 3 de 3 semillas | 4,49 | 0,00 % |
+| **sílabas por reglas** (tuya) | 45,0 ± 0,5 % | 3 de 3 semillas | 2,00 | 0,18 % |
+| Unigram (industria: T5, Gemma) | 42,0 ± 1,5 % | 2 de 3 semillas | 1,22 | 0,01 % |
+| BPE (industria: GPT-2, Llama) | 41,5 ± 1,0 % | — | 1,17 | 0,03 % |
+
+Con 4 veces más datos todos suben y **la ventaja de las sílabas se mantiene** (+3,5 puntos, en las 3 semillas). Con solo 3 semillas la prueba no alcanza a declararla significativa.
+
+### Primera medición (todos los tokenizadores, 2 semillas)
+
+| Tokenizador | Acierto | Tokens por palabra | Desconocidas |
 |---|---|---|---|
 | letras sueltas | 40,6 ± 1,2 % | 4,50 | 0,01 % |
 | con refuerzo, tal cual (tuya) | 40,3 ± 0,4 % | 3,67 | 0,20 % |
-| **sílabas por reglas** (tuya, corregida) | 39,9 ± 1,7 % | 2,00 | 0,40 % |
+| sílabas por reglas (tuya) | 39,9 ± 1,7 % | 2,00 | 0,40 % |
 | sílabas del cuaderno (tuya, tal cual) | 39,6 ± 0,1 % | 1,97 | 0,48 % |
 | con refuerzo, arreglado (tuya) | 37,7 ± 0,1 % | 1,22 | 2,93 % |
 | palabras enteras (word2vec, fastText) | 37,7 ± 2,1 % | 1,13 | 5,45 % |
-| Unigram (industria: T5, Llama 1) | 36,7 ± 2,3 % | 1,24 | 0,24 % |
-| BPE (industria: GPT-2, RoBERTa) | 35,2 ± 2,8 % | 1,19 | 0,44 % |
-| GPT-4o (industria, sin entrenar) | 34,7 ± 1,2 % | 1,28 | 2,65 % |
+| Unigram | 36,7 ± 2,3 % | 1,24 | 0,24 % |
+| BPE | 35,2 ± 2,8 % | 1,19 | 0,44 % |
+| GPT-4o (sin entrenar) | 34,7 ± 1,2 % | 1,28 | 2,65 % |
 
 Menos tokens por palabra = secuencias más cortas = modelo más rápido. Pocas desconocidas = el vocabulario cubre bien textos nuevos.
 
@@ -46,17 +72,20 @@ Medidos con 128 palabras silabeadas a mano según la RAE (`silabas_referencia.py
 - **bilstm** (1 errores): aéreo: `aé-re-o` (es `a-é-re-o`)
 - **transformer** (3 errores): pingüino: `pin-g-üi-no` (es `pin-güi-no`), vergüenza: `ver-g-üen-za` (es `ver-güen-za`), sonreír: `so-nre-ír` (es `son-re-ír`)
 
-## 3. Corrector ortográfico (parcial, escenario «solo letras cambiadas»)
+## 3. Corrector ortográfico
 
-3 000 frases para entrenar, 500 de prueba, 2 semillas. CER = % de letras mal después de corregir (menos es mejor).
+3 000 frases para entrenar, 500 de prueba. CER = % de letras mal después de corregir (menos es mejor).
 
-| Corrector | CER |
-|---|---|
-| Diccionario (Norvig/SymSpell, industria clásica) | 6,66 % |
-| **Tu GNN con conexiones residuales** (arreglo) | **10,84 %** |
-| Sin corregir (piso) | 12,56 % |
-| Tu GNN tal cual, supervisada | 43,57 % |
-| Tu GNN tal cual, con refuerzo (como el cuaderno) | 94,10 % |
+| Corrector | Solo letras cambiadas | Todos los errores |
+|---|---|---|
+| Diccionario (Norvig/SymSpell, industria clásica) | **6,6 %** | **10,1 %** |
+| **Híbrido: diccionario + tu GNN** (mejora, 3 semillas) | 6,8 % | 10,2 % |
+| Tu GNN con conexiones residuales (arreglo, 3 semillas) | 11,0 % | 20,6 % |
+| Sin corregir (piso) | 12,6 % | 16,6 % |
+| Tu GNN tal cual, supervisada (2 semillas) | 43,6 % | — |
+| Tu GNN tal cual, con refuerzo, como el cuaderno (2 semillas) | 94,1 % | — |
+
+Con todos los errores (letras de más, de menos, traspuestas y espacios) tu GNN empeora el texto: corrige letra por letra y no puede mover letras de lugar.
 
 Para repetirlo:
 

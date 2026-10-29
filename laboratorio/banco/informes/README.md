@@ -7,7 +7,7 @@ Un informe por tema, ordenados por cuaderno. Cada uno tiene la conclusión arrib
 | Informe | Cuaderno | Qué se midió | En una línea |
 |---|---|---|---|
 | [`01-generativos-y-refuerzo.md`](01-generativos-y-refuerzo.md) | 01 texto | Agente PPO que predice palabras, tokenizador con refuerzo, difusión de texto | 🟢 tu difusión con máscaras rellena huecos como la de la industria; 🔴 PPO y tokenizador con refuerzo |
-| [`01-tokenizadores-segmentadores-corrector.md`](01-tokenizadores-segmentadores-corrector.md) | 01 texto | Sílabas contra BPE, Unigram y GPT-4o; segmentadores de sílabas; corrector GNN | ⚪ sílabas un poco arriba de BPE; 🟢 BiLSTM de sílabas 99,2 %; 🔴 corrector bajo el diccionario |
+| [`01-tokenizadores-segmentadores-corrector.md`](01-tokenizadores-segmentadores-corrector.md) | 01 texto | Sílabas contra BPE, Unigram y GPT-4o; segmentadores de sílabas; corrector GNN | 🟢 sílabas le ganan a BPE; 🟢 BiLSTM de sílabas 99,2 %; ⚪ corrector híbrido empata con el diccionario |
 | [`02-primera-tanda.md`](02-primera-tanda.md) | 02 capas | PReLU adaptativa, IDA, SMA, RMB, HMN, seno… | ⚪ casi todo empata; 🔴 HMN y RMB |
 | [`02-memorias-e-industria.md`](02-memorias-e-industria.md) | 02 capas | Capas con memoria, inicializadores Perlin y Lorenz, topologías densas, contra GELU, SiLU, Mish… | ⚪ empatan; 🔴 memoria de errores y LR por neurona |
 | [`02-neuronas-especiales.md`](02-neuronas-especiales.md) | 02 capas | Polinómica, resonante, DMNA, GMO, CDM, CCN, contra Dropout y BatchNorm | 🔴 polinómica, resonante, HiperReLU |
@@ -22,7 +22,7 @@ Un informe por tema, ordenados por cuaderno. Cada uno tiene la conclusión arrib
 | [`07-anti-gradiente.md`](07-anti-gradiente.md) | 07 grafos | Capa anti-gradiente | 🔴 peor en 5 de 6 tareas |
 | [`07-dreg-y-hcmg.md`](07-dreg-y-hcmg.md) | 07 generativos | D-ReG contra GRU/LSTM/Transformer; HCMG contra U-Net | ⚪ los dos; HCMG parecía ganar por una fuga de datos |
 | [`08-votacion-stacking-y-caotica.md`](08-votacion-stacking-y-caotica.md) | 08 | Todas las piezas en la tarea caótica 20D; votación ponderada y stacking | 🟢 stacking (98,5 % en dígitos); 🟢 dendrítica en la caótica |
-| [`reparadas.md`](reparadas.md) | 02, 03, 05, 07 | Las 8 piezas «no listas», arregladas, junto a su original; anti-gradiente como DANN | Las 8 mejoran; 🟢 base radial (antes KNN) en la caótica |
+| [`reparadas.md`](reparadas.md) | 02, 03, 05, 07 | Las 8 piezas «no listas», arregladas, junto a su original; mejoras de la dendrítica y la base radial; anti-gradiente como DANN | Las 8 mejoran; 🟢 base radial selectiva pasa a Dropout en la caótica |
 
 El efecto del tamaño de la red (por qué más parámetros no siempre es mejor) está en el cuaderno [`12_como_funciona_cada_pieza.ipynb`](../../../laboratorio-neuronal/12_como_funciona_cada_pieza.ipynb).
 

@@ -45,3 +45,14 @@ def test_dann_datos_y_entrenamiento_corto():
     assert len(datos["prueba_x"]) == len(datos["prueba_y"])
     destino, origen = entrenar_dann(datos, True, 0, epocas=2)
     assert 0.0 <= destino <= 1.0 and 0.0 <= origen <= 1.0
+
+
+@pytest.mark.parametrize("nombre", ["dendritica_dropout", "rbf_dropout", "dendritica_multi", "rbf_selectiva"])
+def test_mejorada_forma_y_gradiente(nombre):
+    torch.manual_seed(0)
+    red = Red(PIEZAS[nombre], 6, 2, ocultas=8)
+    red.train()
+    y = red(torch.randn(16, 6))
+    assert y.shape == (16, 2) and torch.isfinite(y).all()
+    y.pow(2).mean().backward()
+    assert all(p.grad is not None for p in red.parameters())

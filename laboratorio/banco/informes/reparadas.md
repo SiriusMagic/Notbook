@@ -19,6 +19,25 @@ Tomé las piezas que perdían por un error de diseño (sección 3 de [`RECOMENDA
 
 Qué aprendí: casi todas fallaban por el mismo tipo de error, algo **fijo o duro** donde hacía falta algo **aprendido y suave** (umbral, amplificación, atención, centros). Una vez arreglado, la pieza se comporta como la red estándar: no daña, pero solo la base radial aporta algo propio.
 
+## Segunda vuelta: mejorar las prometedoras para superar a Dropout
+
+Código: `laboratorio/banco/piezas_mejoradas.py`. Mismas 7 tareas y 5 semillas. En la tarea caótica (tabla de 20 columnas con ruido), que es donde tus capas rinden:
+
+| Pieza | Caótica 20D | Pierde en… | Parámetros |
+|---|---|---|---|
+| **Base radial selectiva** (`rbf_selectiva`: además aprende qué columnas mirar) | **78,9 ± 1,5 %** | XOR (96,3 % contra 97,7 %) y regresión (por poco) | 3 640 |
+| Dropout (industria) | 77,4 ± 2,1 % | regresión (3 veces más error) | 1 860 |
+| Base radial entrenable | 76,9 ± 0,7 % | regresión (por poco) | 3 588 |
+| Dendrítica (02) | 76,1 ± 0,8 % | dígitos, regresión y serie de seno | 1 860 |
+| Base radial + Dropout | 75,9 ± 0,2 % | regresión y serie de seno | 3 588 |
+| Dendrítica + Dropout | 75,6 ± 1,0 % | dígitos, lunas, regresión y seno | 1 860 |
+| Dendrítica con 4 dendritas (`dendritica_multi`) | 71,2 ± 2,0 % | XOR; 🟢 gana en la serie de seno | 3 724 |
+| Red estándar | 70,5 ± 1,1 % | — | 1 860 |
+
+- **La base radial selectiva le gana a Dropout en 4 de 5 semillas** (+1,5 puntos), pero la diferencia todavía no es significativa (p = 0,29). Es tu mejor capa para tablas con ruido: no daña en las demás tareas, salvo XOR.
+- **Juntar tus capas con Dropout no suma: resta.** Las dos frenan la memorización y, juntas, frenan de más.
+- La dendrítica con 4 dendritas es la más pareja (no pierde casi en nada y gana en la serie de seno), pero pierde la ventaja en la tarea caótica.
+
 ## Anti-gradiente bien usado: DANN
 
 La inversión de gradiente solo sirve cuando hay **dos dominios**: datos con etiqueta de uno (por ejemplo, una cámara) y datos sin etiqueta de otro (otra cámara). La rama aparte intenta adivinar de qué dominio viene cada ejemplo, y el gradiente invertido obliga a la red a ignorar esa diferencia.

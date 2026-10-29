@@ -77,3 +77,15 @@ def test_competencia_e_informe():
                              semillas=(0,), aviso=lambda *_: None, epocas=2, lote=16)
     texto = informe_correctores(r)
     assert "Tu GNN tal cual, supervisada" in texto and "Diccionario" in texto and "Sin corregir" in texto
+
+
+def test_corrector_hibrido():
+    from laboratorio.banco.correccion import CorrectorDiccionario, corregir_hibrido
+
+    dicc = CorrectorDiccionario(["la casa es bonita", "la cosa es rara"] * 3)
+    # «cxsa»: candidatas «casa» y «cosa»; elige la de la red. «bonxta» lo arregla el diccionario.
+    assert corregir_hibrido(dicc, ["la cxsa es bonxta"], ["la cosa es bonxta"]) == ["la cosa es bonita"]
+    # una palabra que estaba bien no se toca aunque la red la cambie
+    assert corregir_hibrido(dicc, ["la casa es rara"], ["la cosa es rara"]) == ["la casa es rara"]
+    # con otra cantidad de palabras, solo el diccionario
+    assert corregir_hibrido(dicc, ["la cxsa"], ["la c sa"]) == [dicc.corregir("la cxsa")]

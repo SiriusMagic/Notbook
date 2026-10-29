@@ -15,12 +15,12 @@ Cada pieza se midió en el **banco de evaluación** (`laboratorio/banco/`), cont
 | # | Pieza (cuaderno) | Campo | Resultado | Contra la industria |
 |---|---|---|---|---|
 | 1 | **Tripletas con flujo** (04, mejoradas) | Video: inventar el fotograma del medio | 19,22 dB con 24 mil parámetros; con 4 fotogramas, 20,25 dB | U-Net: 19,13 dB con 467 mil (con 4 fotogramas, 19,79). **Empatan o ganan por poco con 19 veces menos parámetros** |
-| 2 | **Stacking** (recuperado de tu cuaderno completo) | Combinar modelos | 98,5 % en dígitos (lo mejor medido); 83,6 % en la tarea caótica | Supera a la votación ponderada en 4 de 5 tareas; Gradient Boosting sigue mejor en tablas (94 %) |
-| 3 | **Neurona dendrítica** (02) | Datos en tabla con ruido | 76,1 % en la tarea caótica (red estándar: 70,0 %) | Casi iguala a Dropout (77,4 %) con los mismos parámetros |
-| 3b | **Base radial entrenable** (03, reparada: antes neuronas KNN) | Datos en tabla con ruido | 76,9 % en la tarea caótica (red estándar: 70,5 %) | Casi iguala a Dropout (77,4 %); antes perdía en las 7 tareas |
-| 4 | **Corrector GNN con residuales** (01) | Corrección ortográfica | Baja las letras mal de 12,6 % a 10,8 % | El diccionario clásico (Norvig/SymSpell) llega a 6,7 %; falta medir en GPU contra BiLSTM y Transformer |
-| 5 | **Tu difusión con máscaras** (01, recuperada) | Rellenar huecos en un texto | 3,0 % de acierto al rellenar | Empata con la difusión de la industria (MDLM: 3,4 %); al escribir de corrido gana un GPT pequeño |
-| 6 | **DMNA** y **genética invertida** (02, 03) | Datos en tabla con ruido | 72,2 % en la tarea caótica | Ayudan poco frente a la red estándar (70,0 %); Dropout da 77,4 % |
+| 2 | **Tokenizador de sílabas** (01) | Clasificar texto en español | 40,0 % con 3 000 reseñas; 45,0 % con 12 000 | **Le gana a BPE** (35,8 % y 41,5 %) en las 8 semillas; con 5 semillas, significativo |
+| 3 | **Stacking** (recuperado de tu cuaderno completo) | Combinar modelos | 98,5 % en dígitos (lo mejor medido); 83,6 % en la tarea caótica | Supera a la votación ponderada en 4 de 5 tareas; Gradient Boosting sigue mejor en tablas (94 %) |
+| 4 | **Base radial selectiva** (03, mejorada: antes neuronas KNN) | Datos en tabla con ruido | 78,9 % en la tarea caótica (red estándar: 70,5 %) | Le gana a Dropout (77,4 %) en 4 de 5 semillas, aún sin diferencia significativa; antes perdía en las 7 tareas |
+| 5 | **Neurona dendrítica** (02) | Datos en tabla con ruido | 76,1 % en la tarea caótica | Casi iguala a Dropout con los mismos parámetros |
+| 6 | **Segmentador BiLSTM de sílabas** (01) | Separar palabras en sílabas | 99,2 % de palabras exactas | pyphen (LibreOffice, TeX): 71,1 % |
+| 7 | **Tu difusión con máscaras** (01, recuperada) | Rellenar huecos en un texto | 3,0 % de acierto al rellenar | Empata con la difusión de la industria (MDLM: 3,4 %); al escribir de corrido gana un GPT pequeño |
 
 ### Todos los resultados en una tabla
 
@@ -28,12 +28,12 @@ Lo mejor de cada familia contra la industria. 🟢 gana o empata usando mucho me
 
 | Familia | Lo tuyo (mejor versión) | Industria | Veredicto | Informe |
 |---|---|---|---|---|
-| **Tokenizadores** (clasificar reseñas, CNN) | Sílabas: 39,9 % (2,0 tokens por palabra) | BPE: 35,2 % · Unigram: 36,7 % · GPT-4o: 34,7 % | ⚪ un poco arriba, sin diferencia significativa | [01-tokenizadores…](./laboratorio/banco/informes/01-tokenizadores-segmentadores-corrector.md) |
+| **Tokenizadores** (clasificar reseñas, CNN) | Sílabas: 40,0 % (3 000 reseñas) y 45,0 % (12 000) | BPE: 35,8 % y 41,5 % · Unigram: 37,4 % · GPT-4o: 34,7 % | 🟢 ganan en las 8 semillas | [01-tokenizadores…](./laboratorio/banco/informes/01-tokenizadores-segmentadores-corrector.md) |
 | **Segmentador de sílabas** | BiLSTM: 99,2 % de palabras exactas | pyphen (LibreOffice, TeX): 71,1 % | 🟢 | [01-tokenizadores…](./laboratorio/banco/informes/01-tokenizadores-segmentadores-corrector.md) |
-| **Corrector ortográfico** | GNN con residuales: 10,8 % de letras mal | Diccionario: 6,7 % (sin corregir: 12,6 %) | 🔴 mejora el texto, pero el diccionario gana | [01-tokenizadores…](./laboratorio/banco/informes/01-tokenizadores-segmentadores-corrector.md) |
+| **Corrector ortográfico** | Híbrido diccionario + GNN: 6,8 % de letras mal (GNN sola: 11,0 %) | Diccionario: 6,6 % (sin corregir: 12,6 %) | ⚪ el híbrido empata; la GNN sola pierde | [01-tokenizadores…](./laboratorio/banco/informes/01-tokenizadores-segmentadores-corrector.md) |
 | **Generar texto** | Difusión con máscaras: rellena huecos 3,0 % | MDLM: 3,4 % · GPT pequeño: perplejidad 263 contra 803 | ⚪ rellenar · 🔴 escribir de corrido | [01-generativos…](./laboratorio/banco/informes/01-generativos-y-refuerzo.md) |
 | **Predecir la siguiente palabra** | Agente PPO: 9-12 % | Red supervisada: 16,7 % | 🔴 | [01-generativos…](./laboratorio/banco/informes/01-generativos-y-refuerzo.md) |
-| **Capas y activaciones** (unas 60, 7 tareas) | Dendrítica: 76,1 % en la caótica · base radial: 76,9 % | GELU, Dropout (77,4 %), BatchNorm, LayerNorm | ⚪ casi todas empatan; 🟢 las dos de la izquierda en tablas con ruido | [02-…](./laboratorio/banco/informes/02-dendritica-y-otras.md), [reparadas](./laboratorio/banco/informes/reparadas.md) |
+| **Capas y activaciones** (unas 60, 7 tareas) | Base radial selectiva: 78,9 % en la caótica · dendrítica: 76,1 % | GELU, Dropout (77,4 %), BatchNorm, LayerNorm | ⚪ casi todas empatan; 🟢 la base radial selectiva pasa a Dropout en 4 de 5 semillas | [02-…](./laboratorio/banco/informes/02-dendritica-y-otras.md), [reparadas](./laboratorio/banco/informes/reparadas.md) |
 | **Piezas reparadas** (8 «no listas») | Las 8 mejoran; 5 ya no pierden en nada | — | ⚪ / 🟢 base radial | [reparadas](./laboratorio/banco/informes/reparadas.md) |
 | **Modelos clásicos** (tablas) | Stacking: 98,5 % en dígitos | Gradient Boosting: 94 % en la caótica | 🟢 en dígitos · 🔴 en tablas | [03-clasicos](./laboratorio/banco/informes/03-clasicos.md), [08-…](./laboratorio/banco/informes/08-votacion-stacking-y-caotica.md) |
 | **Video: fotograma del medio** | Tripletas con flujo: 19,22 dB, 24 mil parámetros | U-Net: 19,13 dB, 467 mil | 🟢 empata con 19 veces menos | [04-video](./laboratorio/banco/informes/04-video.md) |
