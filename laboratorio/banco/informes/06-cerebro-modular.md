@@ -4,7 +4,7 @@ Piezas en `laboratorio/banco/piezas_06.py`. Para repetir: `python -m laboratorio
 
 ## Conclusión
 
-- **Nada del 06 le gana a la tecnología actual.** En 48 de 49 comparaciones el resultado es «igual» a la red estándar (después de corregir por comparaciones múltiples). La única «victoria» (votación de cabezas en la serie de seno) vale poco: en esa tarea una regresión lineal le gana a todas las redes (ver resultados-02).
+- **Nada del 06 le gana a la tecnología actual.** En 48 de 49 comparaciones el resultado es «igual» a la red estándar (después de corregir por comparaciones múltiples). La única «victoria» (votación de cabezas en la serie de seno) vale poco: en esa tarea una regresión lineal le gana a todas las redes (ver `03-clasicos.md`).
 - **Tarea caótica 20D (la red estándar memoriza):** varias piezas suben un poco, pero tienen de 12 a 20 veces más parámetros. Comparación justa con una red estándar del mismo tamaño (5 semillas):
 
 | Modelo | Parámetros | Prueba |

@@ -108,7 +108,16 @@ def _modelo_texto(nombre: str, v: int, d: int = 128, ventana: int = 16):
     return DReG()
 
 
-def entrenar_texto(nombre: str, xe, v: int, semilla: int = 0, pasos: int = 1500, lote: int = 32, lr: float = 1e-3):
+def _dispositivo(dispositivo: str):
+    import torch
+
+    if dispositivo == "auto":
+        dispositivo = "cuda" if torch.cuda.is_available() else "cpu"
+    return torch.device(dispositivo)
+
+
+def entrenar_texto(nombre: str, xe, v: int, semilla: int = 0, pasos: int = 1500, lote: int = 32, lr: float = 1e-3,
+                   dispositivo: str = "auto"):
     import torch
     from torch import nn
 
@@ -116,10 +125,11 @@ def entrenar_texto(nombre: str, xe, v: int, semilla: int = 0, pasos: int = 1500,
 
     torch.manual_seed(semilla)
     rng = np.random.default_rng(semilla)
-    m = _modelo_texto(nombre, v)
+    dev = _dispositivo(dispositivo)
+    m = _modelo_texto(nombre, v).to(dev)
     opt = torch.optim.AdamW(m.parameters(), lr=lr)
     for _ in range(pasos):
-        x = torch.as_tensor(xe[rng.integers(0, len(xe), lote)])
+        x = torch.as_tensor(xe[rng.integers(0, len(xe), lote)], device=dev)
         logits = m(x[:, :-1])
         perdida = nn.functional.cross_entropy(logits.reshape(-1, v), x[:, 1:].reshape(-1), ignore_index=PAD)
         opt.zero_grad()
@@ -136,10 +146,11 @@ def perplejidad_texto(m, xp, v: int) -> float:
     from .difusion_texto import PAD
 
     m.eval()
+    dev = next(m.parameters()).device
     total, cuantos = 0.0, 0
     with torch.no_grad():
         for i in range(0, len(xp), 128):
-            x = torch.as_tensor(xp[i:i + 128])
+            x = torch.as_tensor(xp[i:i + 128], device=dev)
             logits = m(x[:, :-1])
             total += float(nn.functional.cross_entropy(logits.reshape(-1, v), x[:, 1:].reshape(-1),
                                                        ignore_index=PAD, reduction="sum"))
@@ -148,7 +159,8 @@ def perplejidad_texto(m, xp, v: int) -> float:
 
 
 def competir_dreg(entreno: int = 3000, prueba: int = 500, semillas=(0, 1, 2), pasos: int = 1500, aviso=print,
-                  modelos=("dreg_cuaderno", "dreg_arreglado", "gru", "gru_grande", "lstm", "transformer")) -> dict:
+                  modelos=("dreg_cuaderno", "dreg_arreglado", "gru", "gru_grande", "lstm", "transformer"),
+                  dispositivo: str = "auto") -> dict:
     from .datos_reales import textos_reales
     from .difusion_texto import preparar
 
@@ -159,7 +171,7 @@ def competir_dreg(entreno: int = 3000, prueba: int = 500, semillas=(0, 1, 2), pa
     for nombre in modelos:
         filas = []
         for s in semillas:
-            m = entrenar_texto(nombre, xe, v, s, pasos)
+            m = entrenar_texto(nombre, xe, v, s, pasos, dispositivo=dispositivo)
             filas.append({"perplejidad": perplejidad_texto(m, xp, v), "parametros": sum(p.numel() for p in m.parameters())})
         r[nombre] = filas
         aviso(f"{nombre:16} perplejidad {np.mean([f['perplejidad'] for f in filas]):.1f}")
@@ -258,24 +270,26 @@ def _modelo_imagen(nombre: str, base: int = 32):
     return HCMG()
 
 
-def competir_hcmg(entreno: int = 3000, prueba: int = 500, semillas=(0, 1, 2), epocas: int = 20, aviso=print) -> dict:
+def competir_hcmg(entreno: int = 3000, prueba: int = 500, semillas=(0, 1, 2), epocas: int = 20, aviso=print,
+                  dispositivo: str = "auto") -> dict:
     import torch
     from torch import nn
 
     from .video import psnr, ssim
 
-    xe, ce, ke, ye = datos_hcmg(entreno, 0, "entreno")
-    xp, cp, kp, yp = datos_hcmg(prueba, 1, "prueba")
+    dev = _dispositivo(dispositivo)
+    xe, ce, ke, ye = (t.to(dev) for t in datos_hcmg(entreno, 0, "entreno"))
+    xp, cp, kp, yp = (t.to(dev) for t in datos_hcmg(prueba, 1, "prueba"))
     r = {"_datos": {"entreno": entreno, "prueba": prueba, "epocas": epocas, "semillas": len(semillas)}}
     for nombre in ("hcmg", "hcmg_sin_condicion", "unet_condiciones"):
         filas = []
         for s in semillas:
             torch.manual_seed(s)
             rng = np.random.default_rng(s)
-            m = _modelo_imagen(nombre)
+            m = _modelo_imagen(nombre).to(dev)
             opt = torch.optim.Adam(m.parameters(), lr=1e-3)
             for _ in range(epocas):
-                orden = rng.permutation(entreno)
+                orden = torch.as_tensor(rng.permutation(entreno), device=dev)
                 for i in range(0, entreno, 64):
                     j = orden[i:i + 64]
                     perdida = nn.functional.mse_loss(m(xe[j], ce[j], ke[j]), ye[j])
@@ -283,7 +297,7 @@ def competir_hcmg(entreno: int = 3000, prueba: int = 500, semillas=(0, 1, 2), ep
             m.eval()
             with torch.no_grad():
                 pred = (m(xp, cp, kp) + 1) / 2
-            real = (yp + 1) / 2
+            pred, real = pred.cpu(), ((yp + 1) / 2).cpu()
             filas.append({"psnr": psnr(pred.numpy(), real.numpy()), "ssim": ssim(pred, real),
                           "parametros": sum(p.numel() for p in m.parameters())})
         r[nombre] = filas

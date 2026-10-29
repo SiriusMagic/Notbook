@@ -23,3 +23,11 @@ def test_hcmg(nombre):
     assert x.shape == y.shape == (4, 3, 16, 16) and c.shape == (4, 10) and k.shape == (4, 3)
     out = g._modelo_imagen(nombre)(x, c, k)
     assert out.shape == y.shape and out.abs().max() <= 1
+
+
+def test_respetan_el_dispositivo_pedido():
+    xe = np.random.default_rng(0).integers(4, 30, (8, 6))
+    m = g.entrenar_texto("gru", xe, 30, pasos=1, lote=4, dispositivo="cpu")
+    assert next(m.parameters()).device.type == "cpu"
+    r = g.competir_hcmg(entreno=8, prueba=4, semillas=(0,), epocas=1, aviso=lambda *_: None, dispositivo="cpu")
+    assert r["hcmg"][0]["psnr"] > 0

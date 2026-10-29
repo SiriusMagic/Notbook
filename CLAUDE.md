@@ -1,6 +1,8 @@
 # Notbook
 
-Cuadernos de Google Colab ordenados: `laboratorio-neuronal/` (9 cuadernos de experimentos por tema), `laboratorio/` (piezas reutilizables en `.py` con pruebas) y `vulkan/` (portal Wi-Fi). Repo privado.
+Laboratorio de investigación en redes neuronales, medido contra la industria. `laboratorio-neuronal/` (13 cuadernos: 01-09 por tema, 10-11 competencias en GPU, 12 guía, 13 correr lo pendiente en GPU), `laboratorio/` (piezas en `.py` con pruebas y el banco de evaluación en `laboratorio/banco/`, con sus informes en `laboratorio/banco/informes/`), `RECOMENDACIONES.md` (qué usar en cada campo) y `vulkan/` (portal Wi-Fi). Repo privado.
+
+Al medir algo nuevo: datos de prueba que la red nunca vio, varias semillas, comparar con la industria y con la red estándar de su mejor tamaño; el informe va en `laboratorio/banco/informes/` y el resumen en `README.md` y `RECOMENDACIONES.md`.
 
 ## Comandos
 

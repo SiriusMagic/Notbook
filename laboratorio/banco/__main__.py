@@ -156,8 +156,8 @@ def main(argv=None) -> None:
         if a.generativos07:
             from . import generativos_07 as g
 
-            h = g.competir_hcmg(semillas=semillas, epocas=a.epocas or 20)
-            d = g.competir_dreg(semillas=semillas, pasos=a.pasos or 1500)
+            h = g.competir_hcmg(semillas=semillas, epocas=a.epocas or 20, dispositivo=a.dispositivo)
+            d = g.competir_dreg(semillas=semillas, pasos=a.pasos or 1500, dispositivo=a.dispositivo)
             (Path(a.salida) / "generativos07.md").write_text(g.informe(d, h), encoding="utf-8")
         print(f"\nInformes en: {a.salida}")
         return
