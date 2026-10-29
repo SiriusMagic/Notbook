@@ -9,7 +9,7 @@ pytest.importorskip("sklearn")
 from laboratorio.banco import generativos_07 as g  # noqa: E402
 
 
-@pytest.mark.parametrize("nombre", ["dreg_cuaderno", "dreg_arreglado", "gru", "lstm", "transformer"])
+@pytest.mark.parametrize("nombre", ["dreg_cuaderno", "dreg_arreglado", "gru", "gru_grande", "lstm", "transformer"])
 def test_modelos_de_texto(nombre):
     xe = np.random.default_rng(0).integers(4, 30, (16, 10))
     m = g.entrenar_texto(nombre, xe, 30, pasos=2, lote=4)

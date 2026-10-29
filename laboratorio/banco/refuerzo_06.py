@@ -118,7 +118,9 @@ def entorno_codigo(objetivo: str = "hola", max_tokens: int = 20):
 
 
 # ================================================================ 2. Cubos
-def entorno_cubos(normalizar: bool = False, max_pasos: int = 200):
+def entorno_cubos(normalizar: bool = False, max_pasos: int = 200, guiar: bool = False):
+    """``guiar``: suma una recompensa pequeña cuando los cuerpos se acercan al cubo (sin ella, el agente solo recibe
+    señal cuando el cubo ya se movió, y para moverlo los dos tienen que empujar a la vez: casi nunca pasa al azar)."""
     import gymnasium as gym
     from gymnasium import spaces
 
@@ -143,6 +145,7 @@ def entorno_cubos(normalizar: bool = False, max_pasos: int = 200):
                         or np.array_equal(self.c2, self.cubo) or np.array_equal(self.cubo, self.meta)):
                     break
             self.dist = np.linalg.norm(self.cubo - self.meta)
+            self.cerca = np.linalg.norm(self.c1 - self.cubo) + np.linalg.norm(self.c2 - self.cubo)
             self.pasos = 0
             return self._obs(), {}
 
@@ -164,6 +167,10 @@ def entorno_cubos(normalizar: bool = False, max_pasos: int = 200):
             d = np.linalg.norm(self.cubo - self.meta)
             r = -0.1 + (self.dist - d) * 0.5
             self.dist = d
+            if guiar:
+                cerca = np.linalg.norm(self.c1 - self.cubo) + np.linalg.norm(self.c2 - self.cubo)
+                r += 0.1 * (self.cerca - cerca)
+                self.cerca = cerca
             self.pasos += 1
             exito = bool(np.array_equal(self.cubo, self.meta))
             if exito:

@@ -33,6 +33,8 @@ def _modelo_texto(nombre: str, v: int, d: int = 128, ventana: int = 16):
     import torch
     from torch import nn
 
+    if nombre == "gru_grande":  # GRU con tantos parámetros como D-ReG (comparación justa)
+        return _modelo_texto("gru", v, d=200)
     if nombre in ("gru", "lstm"):
         class Recurrente(nn.Module):
             def __init__(self):
@@ -145,7 +147,8 @@ def perplejidad_texto(m, xp, v: int) -> float:
     return math.exp(total / cuantos)
 
 
-def competir_dreg(entreno: int = 3000, prueba: int = 500, semillas=(0, 1, 2), pasos: int = 1500, aviso=print) -> dict:
+def competir_dreg(entreno: int = 3000, prueba: int = 500, semillas=(0, 1, 2), pasos: int = 1500, aviso=print,
+                  modelos=("dreg_cuaderno", "dreg_arreglado", "gru", "gru_grande", "lstm", "transformer")) -> dict:
     from .datos_reales import textos_reales
     from .difusion_texto import preparar
 
@@ -153,7 +156,7 @@ def competir_dreg(entreno: int = 3000, prueba: int = 500, semillas=(0, 1, 2), pa
     tok, xe, xp = preparar(te, tp, vocabulario=2000, largo=24)
     v = tok.get_vocab_size()
     r = {"_datos": {"entreno": len(xe), "prueba": len(xp), "vocabulario": v, "pasos": pasos, "semillas": len(semillas)}}
-    for nombre in ("dreg_cuaderno", "dreg_arreglado", "gru", "lstm", "transformer"):
+    for nombre in modelos:
         filas = []
         for s in semillas:
             m = entrenar_texto(nombre, xe, v, s, pasos)
@@ -296,8 +299,10 @@ def informe(dreg: dict, hcmg: dict) -> str:
          f"prueba, BPE de {dd['vocabulario']}, {dd['pasos']} pasos, {dd['semillas']} semillas)", "",
          "| Modelo | Perplejidad (menos es mejor) | Parámetros |", "|---|---|---|"]
     nombres = {"dreg_cuaderno": "D-ReG tal cual (atención sobre 1 elemento)", "dreg_arreglado": "D-ReG con atención a las últimas 16 palabras (arreglo)",
-               "gru": "GRU (industria clásica)", "lstm": "LSTM (industria clásica)", "transformer": "Transformer causal, como GPT (industria)"}
+               "gru": "GRU (industria clásica)", "gru_grande": "GRU del mismo tamaño que D-ReG (industria)", "lstm": "LSTM (industria clásica)", "transformer": "Transformer causal, como GPT (industria)"}
     for k, n in nombres.items():
+        if k not in dreg:
+            continue
         l.append(f"| {n} | {f(dreg[k], 'perplejidad')} | {format(dreg[k][0]['parametros'], ',').replace(',', ' ')} |")
     l += ["", f"## HCMG: dibujar el dígito nítido de la clase y el color pedidos a partir de un borrón ({dh['entreno']} "
           f"para entrenar, {dh['prueba']} de prueba, {dh['epocas']} épocas, {dh['semillas']} semillas)", "",

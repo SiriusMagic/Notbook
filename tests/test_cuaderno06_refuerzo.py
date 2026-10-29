@@ -43,3 +43,12 @@ def test_cubos_empujan_juntos_y_terminan():
 def test_rerouting_optimo_y_rapido():
     assert r.optimo_rerouting() == pytest.approx(35.8, abs=0.1)
     assert r.rerouting("arreglado", episodios=5) >= 0
+
+
+def test_cubos_guiados_premian_acercarse():
+    e = r.entorno_cubos(normalizar=True, guiar=True)
+    e.reset(seed=0)
+    e.c1, e.c2, e.cubo = np.array([0, 0]), np.array([0, 1]), np.array([5, 5])
+    e.cerca = np.linalg.norm(e.c1 - e.cubo) + np.linalg.norm(e.c2 - e.cubo)
+    _, recompensa, *_ = e.step(np.array([3, 3]))  # los dos se acercan
+    assert recompensa > -0.1
