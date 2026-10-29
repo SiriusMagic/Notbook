@@ -212,7 +212,8 @@ MODELOS = {
 def competir(entreno: int = 2000, prueba: int = 300, semillas=(0, 1, 2), epocas: int = 30, dispositivo: str = "auto",
              ocultas_lstm: int = 1024, aviso=print) -> dict:
     de, dp = clips(entreno, 0), clips(prueba, 1)
-    r = {"_datos": {"entreno": entreno, "prueba": prueba, "epocas": epocas, "ocultas_lstm": ocultas_lstm}}
+    r = {"_datos": {"entreno": entreno, "prueba": prueba, "epocas": epocas, "ocultas_lstm": ocultas_lstm,
+                    "semillas": len(semillas)}}
     for tarea, modelos in MODELOS.items():
         xe, ye = _xy(de, tarea)
         xp, yp = _xy(dp, tarea)
@@ -245,7 +246,7 @@ def informe(r: dict) -> str:
     d = r["_datos"]
     lineas = ["# Cuaderno 04: interpolación y predicción de fotogramas", "",
               f"Videos de 2 dígitos que se mueven y rebotan (como Moving MNIST), 32×32 a color: {d['entreno']} clips "
-              f"para entrenar y {d['prueba']} de prueba, {d['epocas']} épocas, 3 semillas. PSNR en dB (más es mejor; "
+              f"para entrenar y {d['prueba']} de prueba, {d['epocas']} épocas, {d.get('semillas', 3)} semillas. PSNR en dB (más es mejor; "
               "+3 dB = la mitad de error) y SSIM (1 = idéntico).", ""]
     for tarea, titulo in TITULOS.items():
         lineas += [f"## {titulo}", "", "| Modelo | PSNR | SSIM | Parámetros |", "|---|---|---|---|"]

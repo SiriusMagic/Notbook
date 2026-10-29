@@ -32,3 +32,8 @@ def test_modelos_corren(tarea):
             continue
         m = v.entrenar(nombre, x, y, epocas=1, lote=4, ocultas_lstm=8, dispositivo="cpu")
         assert v.predecir(m, x).shape == y.shape
+
+
+def test_informe_dice_las_semillas_usadas():
+    r = v.competir(entreno=8, prueba=4, semillas=(0, 1), epocas=1, ocultas_lstm=8, dispositivo="cpu", aviso=lambda *_: None)
+    assert "2 semillas" in v.informe(r)

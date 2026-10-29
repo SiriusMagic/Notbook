@@ -224,14 +224,16 @@ def competir_codigo(semillas=(0, 1, 2), pasos: int = 100_000, episodios: int = 5
     return r
 
 
-def competir_cubos(semillas=(0, 1, 2), pasos: int = 100_000, pasos_arreglo: int = 300_000, episodios: int = 50,
-                   aviso=print) -> dict:
-    r = {"al_azar": _evaluar(entorno_cubos(), lambda o, g: g.integers(0, 5, 2), episodios, 0)}
-    for nombre, normal, n in (("ppo_cuaderno", False, pasos), ("ppo_arreglado", True, pasos_arreglo)):
+def competir_cubos(semillas=(0, 1, 2), pasos: int = 100_000, pasos_arreglo: int = 100_000, pasos_guiado: int = 300_000,
+                   episodios: int = 50, aviso=print) -> dict:
+    r = {"al_azar": _evaluar(entorno_cubos(), lambda o, g: g.integers(0, 5, 2), episodios, 0),
+         "_pasos": {"ppo_cuaderno": pasos, "ppo_arreglado": pasos_arreglo, "ppo_guiado": pasos_guiado}}
+    for nombre, normal, guiar, n in (("ppo_cuaderno", False, False, pasos), ("ppo_arreglado", True, False, pasos_arreglo),
+                                     ("ppo_guiado", True, True, pasos_guiado)):
         filas = []
         for s in semillas:
-            pol = ppo(lambda nm=normal: entorno_cubos(nm), n, s, **AJUSTES_CUBOS)
-            filas.append(_evaluar(entorno_cubos(normal), pol, episodios, s))
+            pol = ppo(lambda nm=normal, g=guiar: entorno_cubos(nm, guiar=g), n, s, **AJUSTES_CUBOS)
+            filas.append(_evaluar(entorno_cubos(normal, guiar=guiar), pol, episodios, s))
             aviso(f"cubos {nombre} semilla {s}: {filas[-1]}")
         r[nombre] = filas
     return r
@@ -313,7 +315,8 @@ def _num(x, dec=1):
     return f"{x:,.{dec}f}".replace(",", " ").replace(".", ",")
 
 
-def informe(codigo: dict, cubos: dict, rer: dict, pasos_codigo: int, pasos_cubos: tuple, episodios: int = 30) -> str:
+def informe(codigo: dict, cubos: dict, rer: dict, pasos_codigo: int, pasos_cubos: tuple | None = None,
+            episodios: int = 30) -> str:
     sem_cod = len(next(iter(codigo.values()))["ppo"])
     l = ["# Cuaderno 06: entornos de refuerzo", "",
          f"Cada agente se prueba en {episodios} episodios nuevos por semilla. «Éxito» = llegó a la meta.", "",
@@ -324,9 +327,12 @@ def informe(codigo: dict, cubos: dict, rer: dict, pasos_codigo: int, pasos_cubos
     l += ["", f"## 2. Empujar el cubo entre dos (cuadrícula 10×10, máximo 200 pasos, {len(cubos['ppo_cuaderno'])} semillas)", "",
           "| Agente | Éxito | Pasos por episodio |", "|---|---|---|",
           f"| al azar | {cubos['al_azar']['exito']:.0%} | {cubos['al_azar']['pasos']:.0f} |"]
-    for nombre, texto, n in (("ppo_cuaderno", "PPO tal cual", pasos_cubos[0]),
-                             ("ppo_arreglado", "PPO con posiciones normalizadas", pasos_cubos[1])):
-        f = cubos[nombre]
+    pasos = cubos.get("_pasos") or dict(zip(("ppo_cuaderno", "ppo_arreglado"), pasos_cubos or (0, 0)))
+    for nombre, texto in (("ppo_cuaderno", "PPO tal cual"), ("ppo_arreglado", "PPO con posiciones normalizadas"),
+                          ("ppo_guiado", "PPO con posiciones normalizadas y guía hacia el cubo")):
+        if nombre not in cubos:
+            continue
+        f, n = cubos[nombre], pasos[nombre]
         l.append(f"| {texto} ({_num(n, 0)} pasos) | {_pct(f)} | {np.mean([x['pasos'] for x in f]):.0f} |")
     a, b = np.array(rer["cuaderno"]), np.array(rer["arreglado"])
     l += ["", f"## 3. ReroutingNetwork (5 estados, 20 pasos por episodio, {len(a)} semillas)", "",

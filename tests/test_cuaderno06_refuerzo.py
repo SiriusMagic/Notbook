@@ -52,3 +52,12 @@ def test_cubos_guiados_premian_acercarse():
     e.cerca = np.linalg.norm(e.c1 - e.cubo) + np.linalg.norm(e.c2 - e.cubo)
     _, recompensa, *_ = e.step(np.array([3, 3]))  # los dos se acercan
     assert recompensa > -0.1
+
+
+def test_informe_incluye_cubos_guiados():
+    cubos = {"al_azar": {"exito": 0, "pasos": 200}, "_pasos": {"ppo_cuaderno": 1, "ppo_arreglado": 1, "ppo_guiado": 3},
+             "ppo_cuaderno": [{"exito": 0, "pasos": 200}], "ppo_arreglado": [{"exito": 0, "pasos": 200}],
+             "ppo_guiado": [{"exito": 0.6, "pasos": 90}]}
+    codigo = {"hola": {"al_azar": {"exito": 0}, "ppo": [{"exito": 0}]}}
+    texto = r.informe(codigo, cubos, {"optimo": 35.8, "al_azar": 18, "cuaderno": [1.0], "arreglado": [35.0]}, 1)
+    assert "guía hacia el cubo" in texto and "60%" in texto

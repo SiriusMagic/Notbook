@@ -150,8 +150,8 @@ def main(argv=None) -> None:
             pasos = a.pasos or 100_000
             rer = rf.competir_rerouting(semillas)
             cod = rf.competir_codigo(semillas, pasos=pasos)
-            cub = rf.competir_cubos(semillas, pasos=pasos, pasos_arreglo=pasos)
-            (Path(a.salida) / "refuerzo.md").write_text(rf.informe(cod, cub, rer, pasos, (pasos, pasos), 50),
+            cub = rf.competir_cubos(semillas, pasos=pasos, pasos_arreglo=pasos, pasos_guiado=3 * pasos)
+            (Path(a.salida) / "refuerzo.md").write_text(rf.informe(cod, cub, rer, pasos, episodios=50),
                                                         encoding="utf-8")
         if a.generativos07:
             from . import generativos_07 as g
