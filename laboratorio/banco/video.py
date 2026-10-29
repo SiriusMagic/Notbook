@@ -127,6 +127,61 @@ def _modelo(nombre: str, entradas: int, ocultas_lstm: int = 1024):
                 return self.fc(h[-1]).view(-1, 3, LADO, LADO)
         return FrameInterpolator()
 
+    if nombre == "tripletas_dilatadas":
+        class TripletasDilatadas(nn.Module):
+            """Mejora 1: la misma CNN chica, pero con convoluciones dilatadas (1, 2, 4, 8): ve hasta ~31 píxeles
+            alrededor con casi los mismos parámetros, así alcanza a seguir dígitos que se movieron lejos. Aprende la
+            corrección sobre el promedio de los vecinos."""
+
+            def __init__(self, ancho: int = 24):
+                super().__init__()
+                capas, c = [], 3 * entradas
+                for d in (1, 2, 4, 8):
+                    capas += [nn.Conv2d(c, ancho, 3, padding=d, dilation=d), nn.ReLU()]
+                    c = ancho
+                self.net = nn.Sequential(*capas, nn.Conv2d(ancho, 3, 1))
+
+            def forward(self, x):
+                return self.net(x) + _promedio(x)
+        return TripletasDilatadas()
+
+    if nombre == "tripletas_flujo":
+        class TripletasFlujo(nn.Module):
+            """Mejora 2: en vez de dibujar el fotograma, estima hacia dónde se movió cada píxel (un «flujo» para el
+            fotograma anterior y otro para el siguiente), trae esos píxeles a su lugar (``grid_sample``) y los mezcla
+            con una máscara aprendida; una corrección pequeña arregla lo que falte. Es la idea de RIFE o Super SloMo,
+            en miniatura. Convoluciones dilatadas para ver movimientos grandes."""
+
+            def __init__(self, ancho: int = 24):
+                super().__init__()
+                capas, c = [], 3 * entradas
+                for d in (1, 2, 4, 8, 1):
+                    capas += [nn.Conv2d(c, ancho, 3, padding=d, dilation=d), nn.ReLU()]
+                    c = ancho
+                self.cuerpo = nn.Sequential(*capas)
+                self.flujo = nn.Conv2d(ancho, 2 * entradas, 3, padding=1)   # (dx, dy) por fotograma de entrada
+                self.mezcla = nn.Conv2d(ancho, entradas, 3, padding=1)      # cuánto pesa cada fotograma
+                self.correccion = nn.Conv2d(ancho, 3, 3, padding=1)
+                nn.init.zeros_(self.flujo.weight); nn.init.zeros_(self.flujo.bias)
+                nn.init.zeros_(self.correccion.weight); nn.init.zeros_(self.correccion.bias)
+
+            def forward(self, x):
+                b, _, h, w = x.shape
+                fotos = x.view(b, entradas, 3, h, w)
+                z = self.cuerpo(x)
+                flujo = torch.tanh(self.flujo(z)).view(b, entradas, 2, h, w) * 0.5  # hasta medio cuadro (en [-1, 1])
+                ys, xs = torch.meshgrid(torch.linspace(-1, 1, h, device=x.device),
+                                        torch.linspace(-1, 1, w, device=x.device), indexing="ij")
+                base = torch.stack([xs, ys], -1)  # [h, w, 2]
+                movidas = []
+                for i in range(entradas):
+                    rejilla = base + flujo[:, i].permute(0, 2, 3, 1)
+                    movidas.append(nn.functional.grid_sample(fotos[:, i], rejilla, align_corners=True,
+                                                             padding_mode="border"))
+                pesos = torch.softmax(self.mezcla(z), 1).unsqueeze(2)  # [b, entradas, 1, h, w]
+                return (torch.stack(movidas, 1) * pesos).sum(1) + self.correccion(z)
+        return TripletasFlujo()
+
     if nombre == "unet":
         def bloque(a, b):
             return nn.Sequential(nn.Conv2d(a, b, 3, padding=1), nn.ReLU(), nn.Conv2d(b, b, 3, padding=1), nn.ReLU())
@@ -213,8 +268,8 @@ def predecir(m, x, lote: int = 256):
 
 
 MODELOS = {
-    "medio_de_2": ["copiar", "promedio", "tripletas", "tripletas_residual", "unet"],
-    "medio_de_4": ["copiar", "promedio", "lstm_cuaderno", "unet"],
+    "medio_de_2": ["copiar", "promedio", "tripletas", "tripletas_residual", "tripletas_dilatadas", "tripletas_flujo", "unet"],
+    "medio_de_4": ["copiar", "promedio", "lstm_cuaderno", "tripletas_flujo", "unet"],
     "siguiente": ["copiar", "lstm_cuaderno", "unet"],
 }
 
@@ -246,6 +301,8 @@ def competir(entreno: int = 2000, prueba: int = 300, semillas=(0, 1, 2), epocas:
 
 NOMBRES = {"copiar": "copiar el fotograma más cercano (sin red)", "promedio": "promedio de los vecinos (sin red)",
            "tripletas": "tripletas tal cual (CNN de 3 capas)", "tripletas_residual": "tripletas con corrección sobre el promedio (arreglo)",
+           "tripletas_dilatadas": "tripletas dilatadas (mejora 1: ven más lejos)",
+           "tripletas_flujo": "tripletas con flujo (mejora 2: mueven los píxeles, como RIFE)",
            "lstm_cuaderno": "FrameInterpolator tal cual (LSTM con la imagen aplanada)", "unet": "U-Net (industria)"}
 TITULOS = {"medio_de_2": "Dibujar el fotograma del medio a partir del anterior y el siguiente (tripletas)",
            "medio_de_4": "Dibujar el fotograma del medio a partir de 4 (FrameInterpolator, celda 13)",

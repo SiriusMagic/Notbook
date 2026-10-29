@@ -14,13 +14,14 @@ Un informe por tema, ordenados por cuaderno. Cada uno tiene la conclusión arrib
 | [`03-neuronas-alternativas.md`](03-neuronas-alternativas.md) | 03 | Neuronas KNN y redes genéticas (tal cual, arreglada, invertida) | 🔴 genéticas originales; ⚪ invertida |
 | [`03-clasicos.md`](03-clasicos.md) | 03 | Logística, KNN, SVM, árbol, Random Forest, Gradient Boosting contra la red | Gradient Boosting y SVM ganan en varias tareas |
 | [`04-decorrelacion-y-papelito.md`](04-decorrelacion-y-papelito.md) | 04 visión | CNN auto-decorrelada, papelito preguntón, celda RCF | ⚪ CNN decorrelada; 🔴 RCF |
-| [`04-video.md`](04-video.md) | 04 visión | Tripletas y FrameInterpolator contra una U-Net | 🟢 tripletas: 71 % de la mejora con el 2 % de los parámetros |
+| [`04-video.md`](04-video.md) | 04 visión | Tripletas y FrameInterpolator contra una U-Net | 🟢 tripletas con flujo: empatan con la U-Net con 19 veces menos parámetros |
 | [`05-atencion.md`](05-atencion.md) | 05 atención | Transformer con máscara, AttentiveLinear, atención local | ⚪ máscara; 🔴 AttentiveLinear |
 | [`06-cerebro-modular.md`](06-cerebro-modular.md) | 06 refuerzo | RlNeuron, votación, biomas, cerebro modular, tálamo | ⚪ empatan; la «victoria» del cerebro modular era por tamaño |
 | [`06-refuerzo.md`](06-refuerzo.md) | 06 refuerzo | Entornos: escribir código, empujar cubos, ReroutingNetwork | 🔴 código; 🟢 cubos con guía (65 %) |
 | [`07-anti-gradiente.md`](07-anti-gradiente.md) | 07 grafos | Capa anti-gradiente | 🔴 peor en 5 de 6 tareas |
 | [`07-dreg-y-hcmg.md`](07-dreg-y-hcmg.md) | 07 generativos | D-ReG contra GRU/LSTM/Transformer; HCMG contra U-Net | ⚪ los dos; HCMG parecía ganar por una fuga de datos |
 | [`08-votacion-stacking-y-caotica.md`](08-votacion-stacking-y-caotica.md) | 08 | Todas las piezas en la tarea caótica 20D; votación ponderada y stacking | 🟢 stacking (98,5 % en dígitos); 🟢 dendrítica en la caótica |
+| [`reparadas.md`](reparadas.md) | 02, 03, 05, 07 | Las 8 piezas «no listas», arregladas, junto a su original; anti-gradiente como DANN | Las 8 mejoran; 🟢 base radial (antes KNN) en la caótica |
 
 El efecto del tamaño de la red (por qué más parámetros no siempre es mejor) está en el cuaderno [`12_como_funciona_cada_pieza.ipynb`](../../../laboratorio-neuronal/12_como_funciona_cada_pieza.ipynb).
 
