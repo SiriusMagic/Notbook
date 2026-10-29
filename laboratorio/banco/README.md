@@ -2,6 +2,8 @@
 
 El cuaderno 02 tiene decenas de experimentos «mi idea contra RedEstandar». Cada uno se probó **una vez**, con una sola semilla y midiendo sobre los mismos datos de entrenamiento. Así no se puede saber si una idea es mejor o si tuvo suerte.
 
+Las recomendaciones por campo (dónde conviene usar cada pieza y cuáles no están listas) están en [`RECOMENDACIONES.md`](../../RECOMENDACIONES.md).
+
 Este banco las mide a todas igual:
 
 - **Mismas tareas**: las que ya usan los cuadernos, con datos fijos y una parte de **prueba** que la red nunca ve al entrenar.

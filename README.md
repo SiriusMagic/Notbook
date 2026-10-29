@@ -2,6 +2,15 @@
 
 Cuadernos de Google Colab de varios años, ordenados y documentados.
 
+## Recomendaciones: ¿dónde usar tus piezas?
+
+Todo está en **[`RECOMENDACIONES.md`](./RECOMENDACIONES.md)**. En corto:
+
+- **Datos en tabla con ruido**: es donde mejor les va a tus piezas. La **neurona dendrítica** es la pista más fuerte (76 % contra 70 % de la red estándar; casi como Dropout). Le siguen DMNA y la genética invertida. Para un proyecto real en tablas, Gradient Boosting sigue siendo mejor (94 %).
+- **Corrección ortográfica**: el corrector GNN **con conexiones residuales** mejora el texto con muy pocos parámetros.
+- **Series con ciclos**: IDA y la activación seno bajan ≈ 7 % el error frente a ReLU, pero una regresión lineal les gana en esa serie. Falta probarlas con series reales.
+- **Al final del archivo**: las piezas que no están listas o dejaron mucho que desear, con el motivo de cada una.
+
 ## Contenido
 
 | Carpeta | Qué es |
