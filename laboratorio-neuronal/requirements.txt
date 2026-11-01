@@ -33,7 +33,7 @@ pyvirtualdisplay>=3.0
 
 # Gráficos e imágenes
 matplotlib>=3.9
-seaborn>=0.13
+seaborn>=0.13.2
 networkx>=3.3
 pillow>=11.0
 opencv-python-headless>=4.10
