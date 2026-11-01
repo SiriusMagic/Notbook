@@ -1,6 +1,6 @@
 # Necesario para el paquete laboratorio/ y sus pruebas.
 numpy>=2.5.4
-pytest>=9.1.1
+pytest>=9.2.0
 scikit-learn>=1.9.1     # tareas del banco y prueba del ensamble
 scipy>=1.13             # prueba t del banco de evaluación
 datasets>=4.0           # tareas reales del banco (descarga de Hugging Face)
