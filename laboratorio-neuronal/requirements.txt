@@ -32,7 +32,7 @@ pygame>=2.6
 pyvirtualdisplay>=3.0
 
 # Gráficos e imágenes
-matplotlib>=3.9
+matplotlib>=3.11.2
 seaborn>=0.13
 networkx>=3.3
 pillow>=11.0
