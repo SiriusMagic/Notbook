@@ -38,7 +38,7 @@ networkx>=3.3
 pillow>=11.0
 opencv-python-headless>=4.10
 imageio[ffmpeg]>=2.35
-opensimplex>=0.4.5
+opensimplex>=0.4.5.1
 
 # Texto
 Levenshtein>=0.26
