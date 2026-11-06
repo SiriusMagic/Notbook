@@ -99,12 +99,13 @@ def exactitud(modelo: SuperRed, x, y, ancho: int | None = None) -> float:
 
 
 @torch.no_grad()
-def latencia_ms(modelo: SuperRed, x, ancho: int, repeticiones: int = 30) -> float:
-    """Mediana del tiempo de un paso hacia adelante (CPU de esta máquina, no del dispositivo real)."""
+def latencia_ms(modelo: SuperRed, x, ancho: int, repeticiones: int = 50) -> float:
+    """Mínimo del tiempo de un paso hacia adelante (el mínimo resiste mejor el ruido de otros procesos). CPU de esta
+    máquina, no del dispositivo real."""
     modelo(x, ancho)
     t = []
     for _ in range(repeticiones):
         t0 = time.perf_counter()
         modelo(x, ancho)
         t.append((time.perf_counter() - t0) * 1000)
-    return float(sorted(t)[len(t) // 2])
+    return float(min(t))

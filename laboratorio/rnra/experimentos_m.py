@@ -35,7 +35,7 @@ def reducir_expandir(tarea, semilla: int, anchos=ANCHOS, pasos: int = 600) -> di
     sola = entrenar(SuperRed(tarea.entradas, tarea.salidas, (ancho_cuant,)), x, y, pasos=pasos, semilla=semilla, anchos=(ancho_cuant,))
     filas = {}
     for d in devs:
-        w, b = elegir(sup, d.ram_bytes) or (None, None)
+        w, _ = elegir(sup, d.ram_bytes, bits=(32,)) or (None, None)  # filas en 32 bits: el ancho mayor que cabe sin cuantizar
         f = {}
         if w is not None:
             fija = entrenar(SuperRed(tarea.entradas, tarea.salidas, (w,)), x, y, pasos=pasos, semilla=semilla, anchos=(w,))
@@ -66,7 +66,7 @@ def reducir_expandir(tarea, semilla: int, anchos=ANCHOS, pasos: int = 600) -> di
             e2 = mem.expandir(mem.cargar(ruta), sup)
             rec[f"archivo_{bm}bits"] = exactitud(e2, xp, yp, grande)
         if bm == 32:
-            rec["error_max_peso"] = max(float((a - b).abs().max()) for a, b in zip(e.parameters(), sup.parameters()))
+            rec["error_max_peso"] = max(float((a - b).detach().abs().max()) for a, b in zip(e.parameters(), sup.parameters()))
     rec["sin_memoria"] = exactitud(mem.expandir(mem.reducir(sup, sup.anchos[0], 8, 32), sup, con_memoria=False), xp, yp, grande)
     rec["bytes_nucleo"] = mem.reducir(sup, sup.anchos[0], 8, 32).bytes_nucleo()
     rec["bytes_grande_fp32"] = bytes_modelo(sup, grande, 32)
