@@ -43,6 +43,7 @@ Lo mejor de cada familia contra la industria. 🟢 gana o empata usando mucho me
 | **Generativos** | D-ReG: perplejidad 176 · HCMG: 19,29 dB | GRU del mismo tamaño: 146 · U-Net: 19,80 dB | 🔴 | [07-dreg-y-hcmg](./laboratorio/banco/informes/07-dreg-y-hcmg.md) |
 | **Adaptar a datos nuevos** | Anti-gradiente como DANN: 42,2 % | Red normal: 39,1 % | ⚪ (+3 puntos, no significativo) | [reparadas](./laboratorio/banco/informes/reparadas.md) |
 | **Reorganización autónoma (RNRA-v0)** | Caótica 20D: 76,8 % con 640 conexiones | RigL: 77,1 % · SET: 77,1 % · poda por magnitud: 78,5 % · control aleatorio: 76,8 % | 🔴 empata con RigL y con el azar; sin validar | [15-reorganizacion…](./laboratorio/banco/informes/15-reorganizacion-autonoma.md) |
+| **Red multiescala con memoria portátil (RNRA-M)** | Núcleo de 1,8 KB en RAM; la red grande vuelve idéntica (memoria 32 bits) o sin pérdida (8 bits, 4,7× menos) | Red fija cuantizada a 8 bits: mismos 1,8 KB y 75,7 % contra 76,0 % | ⚪ funciona, no gana; sin validar | [16-plasticidad…](./laboratorio/banco/informes/16-plasticidad-multiescala.md) |
 | **Router + mini-expertos LoRA** | Cuaderno 14 | Un solo LoRA para todo | ⏳ falta correr en GPU | [cuaderno 14](./laboratorio-neuronal/14_router_y_expertos_lora.ipynb) |
 
 ### Lo que se aprendió
@@ -77,7 +78,7 @@ Lo mejor de cada familia contra la industria. 🟢 gana o empata usando mucho me
 
 | Carpeta | Qué es |
 |---|---|
-| [`laboratorio-neuronal/`](./laboratorio-neuronal) | Los cuadernos: 01 texto, 02 capas y activaciones, 03 neuronas alternativas, 04 visión y video, 05 atención, 06 refuerzo y cerebro modular, 07 grafos y generativos, 08 optimización y series, 09 notas e ideas; 10 y 11 competencias con GPU; 12 guía de cómo funciona cada pieza; 13 correr lo pendiente en GPU; 14 router con mini-expertos LoRA; 15 redes de reorganización autónoma (RNRA). |
+| [`laboratorio-neuronal/`](./laboratorio-neuronal) | Los cuadernos: 01 texto, 02 capas y activaciones, 03 neuronas alternativas, 04 visión y video, 05 atención, 06 refuerzo y cerebro modular, 07 grafos y generativos, 08 optimización y series, 09 notas e ideas; 10 y 11 competencias con GPU; 12 guía de cómo funciona cada pieza; 13 correr lo pendiente en GPU; 14 router con mini-expertos LoRA; 15 redes de reorganización autónoma (RNRA); 16 su rama multiescala con memoria portátil (RNRA-M). |
 | [`laboratorio/`](./laboratorio) | Las piezas pasadas a código `.py` con pruebas, y el **banco de evaluación** (`laboratorio/banco/`) con sus informes (`laboratorio/banco/informes/`). |
 | [`vulkan/`](./vulkan) | Portal de acceso de la red Wi-Fi Vulkan (`index.html`). |
 
