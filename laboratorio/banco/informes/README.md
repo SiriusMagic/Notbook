@@ -22,6 +22,7 @@ Un informe por tema, ordenados por cuaderno. Cada uno tiene la conclusión arrib
 | [`07-anti-gradiente.md`](07-anti-gradiente.md) | 07 grafos | Capa anti-gradiente | 🔴 peor en 5 de 6 tareas |
 | [`07-dreg-y-hcmg.md`](07-dreg-y-hcmg.md) | 07 generativos | D-ReG contra GRU/LSTM/Transformer; HCMG contra U-Net | ⚪ los dos; HCMG parecía ganar por una fuga de datos |
 | [`08-votacion-stacking-y-caotica.md`](08-votacion-stacking-y-caotica.md) | 08 | Todas las piezas en la tarea caótica 20D; votación ponderada y stacking | 🟢 stacking (98,5 % en dígitos); 🟢 dendrítica en la caótica |
+| [`15-reorganizacion-autonoma.md`](15-reorganizacion-autonoma.md) | 15 RNRA | Red con máscaras que poda, activa neuronas de reserva y reasigna conexiones, contra MLP fijos, poda por magnitud, crecimiento programado, SET, RigL y un control aleatorio; 6 ablaciones | 🔴 empata con RigL/SET y con el azar; la poda por magnitud le gana en la caótica |
 | [`reparadas.md`](reparadas.md) | 02, 03, 05, 07 | Las 8 piezas «no listas», arregladas, junto a su original; mejoras de la dendrítica y la base radial; anti-gradiente como DANN | Las 8 mejoran; 🟢 base radial selectiva pasa a Dropout en la caótica |
 
 El efecto del tamaño de la red (por qué más parámetros no siempre es mejor) está en el cuaderno [`12_como_funciona_cada_pieza.ipynb`](../../../laboratorio-neuronal/12_como_funciona_cada_pieza.ipynb).
