@@ -21,7 +21,7 @@ from .adaptador_dispositivo import dispositivos, elegir
 from .experimentos import _ms, comparar, holm
 from .superred import (ANCHOS, SuperRed, bytes_modelo, cuantizar_modelo, entrenar, exactitud, latencia_ms)
 
-METODOS_1 = ["fija_por_dispositivo", "cuantizada_despues", "superred_ancho_variable", "rnra_m"]
+METODOS_1 = ["fija_por_dispositivo", "fija_int8", "cuantizada_despues", "superred_ancho_variable", "rnra_m"]
 
 
 def reducir_expandir(tarea, semilla: int, anchos=ANCHOS, pasos: int = 600) -> dict:
@@ -40,6 +40,8 @@ def reducir_expandir(tarea, semilla: int, anchos=ANCHOS, pasos: int = 600) -> di
         if w is not None:
             fija = entrenar(SuperRed(tarea.entradas, tarea.salidas, (w,)), x, y, pasos=pasos, semilla=semilla, anchos=(w,))
             f["fija_por_dispositivo"] = (exactitud(fija, xp, yp, w), bytes_modelo(sup, w, 32), latencia_ms(fija, xp[:256], w))
+            q8 = cuantizar_modelo(fija, 8)  # el comparador justo de RNRA-M en RAM: la misma red fija, también a 8 bits
+            f["fija_int8"] = (exactitud(q8, xp, yp, w), bytes_modelo(sup, w, 8), latencia_ms(q8, xp[:256], w))
             f["superred_ancho_variable"] = (exactitud(sup, xp, yp, w), bytes_modelo(sup, w, 32), latencia_ms(sup, xp[:256], w))
             p = mem.reducir(sup, w, bits_nucleo=8, bits_memoria=32)
             chico = mem.nucleo_como_modelo(p, sup)
@@ -85,6 +87,13 @@ def tablas_reducir_expandir(res: list[dict]) -> str:
             else:
                 sal.append(f"| `{m}` | no cabe | — | — |")
         sal.append("")
+        base = [m for m in METODOS_1 if m != "rnra_m" and all(m in r["filas"][nombre] for r in res)]
+        if len(res) > 1 and "rnra_m" in res[0]["filas"][nombre]:
+            cs = {m: comparar([r["filas"][nombre]["rnra_m"][0] for r in res], [r["filas"][nombre][m][0] for r in res]) for m in base}
+            aj = holm([cs[m]["p"] for m in base])
+            sal += ["| `rnra_m` contra | Diferencia | IC 95 % | p (Holm) |", "|---|---|---|---|"]
+            sal += [f"| `{m}` | {cs[m]['dif'] * 100:+.2f} pp | [{cs[m]['ic'][0] * 100:+.2f}, {cs[m]['ic'][1] * 100:+.2f}] | {p:.3f} |" for m, p in zip(base, aj)]
+            sal.append("")
     rec = {k: [r["rec"][k] for r in res] for k in res[0]["rec"]}
     sal += ["**Recuperar la capacidad al volver al ancho grande** (exactitud de prueba)\n", "| Situación | Exactitud | Memoria comprimida (KB) |", "|---|---|---|",
             f"| Red grande original | {_ms(rec['original'], True)} | — |",
