@@ -1,6 +1,6 @@
 # Cuaderno 16: RNRA-M, plasticidad multiescala
 
-Código: `laboratorio/rnra/` (`superred.py`, `memoria_multiescala.py`, `adaptador_dispositivo.py`, `transferencia.py`, `experimentos_m.py`; `python -m laboratorio.rnra.experimentos_m`). Pruebas: `tests/test_rnra_m.py`. Una sola superred de 32, 128 y 512 neuronas con núcleo cuantizado y una **memoria portátil** comprimida (sin internet, en un `.npz` sin `pickle`).
+Código: `laboratorio/rnra/` (`superred.py`, `memoria_multiescala.py`, `adaptador_dispositivo.py`, `transferencia.py`, `experimentos_m.py`; `python -m laboratorio.rnra.experimentos_m`). Pruebas: `tests/test_rnra_m.py`. El experimento 2 (aprender en el celular y volver, H3) se **retiró** tras estos resultados; está en el commit `fd6e8f3` (`transferencia.py`). Una sola superred de 32, 128 y 512 neuronas con núcleo cuantizado y una **memoria portátil** comprimida (sin internet, en un `.npz` sin `pickle`).
 
 ## Conclusión
 

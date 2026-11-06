@@ -95,7 +95,7 @@ Fallan por un error de diseño. Cada una tiene anotado en el código qué falla 
 | Redes genéticas, tal cual y arreglada (03) | Se derrumban: copian neuronas muertas encima de las vivas. Usa la versión invertida. |
 | AttentiveLinear (05) | Se derrumba (azar en círculos y lunas): sus «factores de atención» no dependen de la entrada. **Reparada (sección 4): empata.** |
 | Anti-gradiente (07) | Peor en 5 de 6 tareas: invierte el gradiente en el camino principal. En la industria (DANN) va en una rama aparte. **Reparada como DANN (sección 4).** |
-| RNRA-v0, reorganización autónoma (15) | Empata con RigL y SET y no se distingue del control aleatorio; en la caótica le gana la poda por magnitud gradual (78,5 % contra 76,8 %). Las 6 ablaciones no cambian nada y el crecimiento casi no se activa. No la uses en lugar de RigL. |
+| RNRA-v0, reorganización autónoma (15) | Empata con RigL y SET y no se distingue del control aleatorio; en la caótica le gana la poda por magnitud gradual (78,5 % contra 76,8 %). Las 6 ablaciones no cambian nada y el crecimiento casi no se activa. No la uses en lugar de RigL; el código se retiró (commit `fd6e8f3`). |
 | Neuronas KNN (03) | Pierden en todo: solo aprende la capa de salida. **Reparadas como base radial (sección 4): 🟢 prometedoras en tablas.** |
 | HMN (02) | Peor en todas las tareas: memoriza la posición de cada fila. **Reparada (sección 4).** |
 | RMB (02) | Inestable: algunas semillas se disparan. **Reparada (sección 4): empata.** |

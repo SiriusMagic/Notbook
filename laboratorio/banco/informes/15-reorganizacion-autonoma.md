@@ -1,6 +1,6 @@
 # Cuaderno 15: redes de reorganización autónoma (RNRA-v0)
 
-Código: `laboratorio/rnra/` (`python -m laboratorio.rnra --todo --ablaciones --semillas 10`). Pruebas: `tests/test_rnra.py`.
+Código: **retirado** tras estos resultados (commit `fd6e8f3`: `git show fd6e8f3:laboratorio/rnra/controlador.py`). Hoy `laboratorio/rnra/` conserva solo el banco de comparación (MLP fijos, poda por magnitud, crecimiento programado, SET y RigL): `python -m laboratorio.rnra --todo --semillas 10`. `rnra_aleatorio` queda cubierto por SET.
 
 ## Conclusión
 

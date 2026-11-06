@@ -1,9 +1,10 @@
 """Cuaderno 16 · Experimentos de RNRA-M, evaluados aparte de RNRA-v0.
 
-Experimento 1 (reducir y expandir): para cada dispositivo, red fija por dispositivo · red grande cuantizada después ·
+Reducir y expandir: para cada dispositivo, red fija por dispositivo · red grande cuantizada después ·
 superred de ancho variable · RNRA-M (superred con núcleo cuantizado + memoria portátil). Se mide precisión, RAM
 calculada, latencia y **capacidad recuperada** al volver al ancho grande (con memoria, sin memoria y con memoria comprimida).
-Experimento 2 (transferencia bidireccional): aprender una tarea nueva en el núcleo pequeño y llevarla a la red grande.
+Historia: un segundo experimento (aprender en el núcleo pequeño y llevarlo a la red grande, H3) no aportó nada medible frente a
+repasar un recuerdo de la tarea vieja y se quitó; está en el commit ``fd6e8f3`` (``transferencia.py``).
 """
 
 from __future__ import annotations
@@ -16,7 +17,6 @@ import numpy as np
 import torch
 
 from . import memoria_multiescala as mem
-from . import transferencia as tr
 from .adaptador_dispositivo import dispositivos, elegir
 from .experimentos import _ms, comparar, holm
 from .superred import (ANCHOS, SuperRed, bytes_modelo, cuantizar_modelo, entrenar, exactitud, latencia_ms)
@@ -106,42 +106,6 @@ def tablas_reducir_expandir(res: list[dict]) -> str:
     return "\n".join(sal)
 
 
-def transferencia(semilla: int, anchos=ANCHOS, pasos: int = 500, n_buffer: int = 200) -> dict:
-    from .experimentos import digitos_permutados
-
-    torch.manual_seed(semilla)
-    sec = digitos_permutados(2)
-    A, B = sec.tareas
-    gen = torch.Generator().manual_seed(semilla)
-    sup = entrenar(SuperRed(64, 10, anchos), A.x_entreno, A.y_entreno, pasos=pasos, semilla=semilla)
-    xa, pa = tr.recuerdo(sup, A.x_entreno, n_buffer, gen)
-    p = mem.reducir(sup, anchos[0], bits_nucleo=8, bits_memoria=32)
-    chico = tr.aprender_en_pequeno(p, sup, B.x_entreno, B.y_entreno, pasos=300, semilla=semilla)
-    tA, tB = (A.x_prueba, A.y_prueba), (B.x_prueba, B.y_prueba)
-    out = {"antes": tr.medir_integracion(sup, sup, anchos[0], tA, tB),
-           "celular": {"A_chico": exactitud(chico, *tA, anchos[0]), "B_chico": exactitud(chico, *tB, anchos[0])}}
-    for m in tr.METODOS_INTEGRACION:
-        g = tr.integrar(m, sup, chico, anchos[0], B.x_entreno, B.y_entreno, xa, pa, n_buffer=n_buffer, semilla=semilla)
-        out[m] = tr.medir_integracion(sup, g, anchos[0], tA, tB)
-    return out
-
-
-def tabla_transferencia(res: list[dict]) -> str:
-    f = lambda k, c: [r[k][c] for r in res]  # noqa: E731
-    sal = [f"En el celular (núcleo de {ANCHOS[0]} neuronas): A {_ms(f('celular', 'A_chico'), True)}, B {_ms(f('celular', 'B_chico'), True)}.\n",
-           "| Integración en la red grande | Tarea A (vieja) | Tarea B (nueva) | Olvido de A |", "|---|---|---|---|",
-           f"| (antes de integrar) | {_ms(f('antes', 'A'), True)} | {_ms(f('antes', 'B'), True)} | 0 |"]
-    for m in tr.METODOS_INTEGRACION:
-        sal.append(f"| `{m}` | {_ms(f(m, 'A'), True)} | {_ms(f(m, 'B'), True)} | {_ms(f(m, 'olvido'), True)} |")
-    comp = [m for m in tr.METODOS_INTEGRACION if m != "copiar_y_reconciliar"]
-    cs = {m: comparar(f("copiar_y_reconciliar", "olvido"), f(m, "olvido")) for m in comp}
-    aj = holm([cs[m]["p"] for m in comp])
-    sal += ["", "Olvido de `copiar_y_reconciliar` menos el de cada método (negativo = olvida menos):\n", "| Contra | Diferencia | IC 95 % | p (Holm) |", "|---|---|---|---|"]
-    for m, p in zip(comp, aj):
-        sal.append(f"| `{m}` | {cs[m]['dif'] * 100:+.2f} pp | [{cs[m]['ic'][0] * 100:+.2f}, {cs[m]['ic'][1] * 100:+.2f}] | {p:.3f} |")
-    return "\n".join(sal)
-
-
 def main(argv=None) -> str:
     ap = argparse.ArgumentParser(prog="python -m laboratorio.rnra.experimentos_m", description="Cuaderno 16: RNRA-M.")
     ap.add_argument("--semillas", type=int, default=10)
@@ -154,11 +118,10 @@ def main(argv=None) -> str:
 
     semillas = range(2 if a.rapido else a.semillas)
     pasos = 200 if a.rapido else a.pasos
-    partes = [f"Semillas: {len(semillas)} · pasos: {pasos} · anchos {ANCHOS} · RAM calculada (no medida en un teléfono) y latencia en la CPU de esta máquina.\n", "## Experimento 1 · Reducir y expandir\n"]
+    partes = [f"Semillas: {len(semillas)} · pasos: {pasos} · anchos {ANCHOS} · RAM calculada (no medida en un teléfono) y latencia en la CPU de esta máquina.\n", "## Reducir y expandir\n"]
     for nombre in a.tarea or ["digitos", "caotica_20d"]:
         t = cargar_tarea(nombre)
         partes += [f"### {nombre}\n", tablas_reducir_expandir([reducir_expandir(t, s, pasos=pasos) for s in semillas]), ""]
-    partes += ["## Experimento 2 · Aprender en el celular y volver a la PC (dígitos permutados)\n", tabla_transferencia([transferencia(s, pasos=pasos) for s in semillas])]
     texto = "\n".join(partes)
     print(texto)
     if a.salida:

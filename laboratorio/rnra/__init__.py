@@ -1,12 +1,10 @@
-"""Cuaderno 15 · Redes Neuronales de Reorganización Autónoma (RNRA-v0). **Sin validar.**
+"""Cuaderno 15 (banco de dispersión dinámica) y cuaderno 16 (superred con memoria portátil).
 
-Una red con ranuras de neuronas y máscaras de conexiones que, mientras aprende, puede podar, activar neuronas de
-reserva y reasignar conexiones hacia donde hace falta, con un presupuesto de conexiones controlado.
+Cuaderno 15: un MLP con máscaras de conexiones y ranuras de neuronas, y los métodos que lo cambian mientras aprende
+(``controlador``: MLP fijos, poda por magnitud, crecimiento programado, SET, RigL). RNRA-v0, que intentaba reasignar
+conexiones con utilidad, redundancia y demanda por región, no superó a RigL ni al azar y se quitó (commit ``fd6e8f3``;
+informe en ``laboratorio/banco/informes/15-reorganizacion-autonoma.md``).
 
-- ``modelo``: MLP con máscaras (pesos de tamaño máximo fijo; desactivar no ahorra tiempo real, solo cuenta conexiones).
-- ``estadisticas``: utilidad, redundancia, plasticidad, estabilidad y demanda por región.
-- ``operaciones``: poda, activación de neuronas de reserva y reorganización de conexiones.
-- ``controlador``: el entrenador, el ciclo proponer → probar → aceptar o revertir y los comparadores (MLP fijos,
-  poda por magnitud, crecimiento programado, SET, RigL, RNRA aleatoria y las ablaciones).
-- ``experimentos``: E1-E5, semillas, estadísticas y el informe.
+- ``modelo``, ``operaciones``, ``controlador``, ``experimentos``: el banco del cuaderno 15.
+- ``superred``, ``memoria_multiescala``, ``adaptador_dispositivo``, ``experimentos_m``: el cuaderno 16 (RNRA-M).
 """

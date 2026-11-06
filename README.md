@@ -42,7 +42,7 @@ Lo mejor de cada familia contra la industria. 🟢 gana o empata usando mucho me
 | **Refuerzo** | Cubos con guía: 65 % · REINFORCE estándar: 35,6 de 35,8 | PPO con guía (*reward shaping*) | 🟢 con guía · 🔴 escribir código | [06-refuerzo](./laboratorio/banco/informes/06-refuerzo.md) |
 | **Generativos** | D-ReG: perplejidad 176 · HCMG: 19,29 dB | GRU del mismo tamaño: 146 · U-Net: 19,80 dB | 🔴 | [07-dreg-y-hcmg](./laboratorio/banco/informes/07-dreg-y-hcmg.md) |
 | **Adaptar a datos nuevos** | Anti-gradiente como DANN: 42,2 % | Red normal: 39,1 % | ⚪ (+3 puntos, no significativo) | [reparadas](./laboratorio/banco/informes/reparadas.md) |
-| **Reorganización autónoma (RNRA-v0)** | Caótica 20D: 76,8 % con 640 conexiones | RigL: 77,1 % · SET: 77,1 % · poda por magnitud: 78,5 % · control aleatorio: 76,8 % | 🔴 empata con RigL y con el azar; sin validar | [15-reorganizacion…](./laboratorio/banco/informes/15-reorganizacion-autonoma.md) |
+| **Reorganización autónoma (RNRA-v0)** | Caótica 20D: 76,8 % con 640 conexiones | RigL: 77,1 % · SET: 77,1 % · poda por magnitud: 78,5 % · control aleatorio: 76,8 % | 🔴 empata con RigL y con el azar; código retirado, queda el banco | [15-reorganizacion…](./laboratorio/banco/informes/15-reorganizacion-autonoma.md) |
 | **Red multiescala con memoria portátil (RNRA-M)** | Núcleo de 1,8 KB en RAM; la red grande vuelve idéntica (memoria 32 bits) o sin pérdida (8 bits, 4,7× menos) | Red fija cuantizada a 8 bits: mismos 1,8 KB y 75,7 % contra 76,0 % | ⚪ funciona, no gana; sin validar | [16-plasticidad…](./laboratorio/banco/informes/16-plasticidad-multiescala.md) |
 | **Router + mini-expertos LoRA** | Cuaderno 14 | Un solo LoRA para todo | ⏳ falta correr en GPU | [cuaderno 14](./laboratorio-neuronal/14_router_y_expertos_lora.ipynb) |
 

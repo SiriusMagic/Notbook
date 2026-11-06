@@ -1,5 +1,5 @@
-"""Las tres operaciones estructurales (poda, crecimiento, reorganización) y utilidades para aplicarlas sin romper el
-optimizador. Todas conservan la regla «una neurona apagada no tiene conexiones» y nunca pasan del presupuesto."""
+"""Cambios de estructura del banco de dispersión dinámica: reasignar conexiones (SET, RigL), poda global por magnitud,
+activar neuronas (crecimiento programado) y rehacer el estado de Adam sin romper el optimizador."""
 
 from __future__ import annotations
 
@@ -52,72 +52,24 @@ def _elegir(puntaje: torch.Tensor, candidatas: torch.Tensor, n: int, mayor: bool
 
 
 @torch.no_grad()
-def podar_neuronas(modelo, pares: list[tuple[int, int]]) -> int:
-    """Apaga las neuronas ``(capa, índice)``. Devuelve cuántas conexiones se liberan."""
-    antes = modelo.conexiones()
-    for l, i in pares:
-        modelo.activa(l)[i] = 0
-    modelo.sincronizar()
-    modelo.limpiar_pesos()
-    return antes - modelo.conexiones()
-
-
-@torch.no_grad()
-def liberar_conexiones(modelo, n: int, puntajes: list[torch.Tensor], gen, aleatorio: bool = False) -> int:
-    """Quita las ``n`` conexiones de menor puntaje de toda la red (para dar presupuesto a una neurona nueva)."""
-    if n <= 0:
-        return 0
-    todo = []
-    for l in range(len(modelo.capas)):
-        idx = modelo.mascara(l).nonzero()
-        v = torch.rand(len(idx), generator=gen) if aleatorio else puntajes[l][idx[:, 0], idx[:, 1]]
-        todo.append((l, idx, v))
-    vals = torch.cat([v for _, _, v in todo])
-    n = min(n, len(vals))
-    umbral = torch.sort(vals).values[n - 1]
-    quitadas = 0
-    for l, idx, v in todo:
-        sel = idx[v <= umbral][: max(n - quitadas, 0)]
-        modelo.mascara(l)[sel[:, 0], sel[:, 1]] = 0
-        quitadas += len(sel)
-    modelo.limpiar_pesos()
-    return quitadas
-
-
-def costo_activar(modelo, l: int) -> tuple[int, int]:
-    """(entradas, salidas) que se le dan a una neurona nueva de la capa ``l``: el promedio de las activas."""
-    act = modelo.activa(l) > 0
-    c_in = max(2, round(float(modelo.mascara(l)[act].sum(1).mean()))) if act.any() else 2
-    c_out = max(2, round(float(modelo.mascara(l + 1)[:, act].sum(0).mean()))) if act.any() else 2
-    return c_in, c_out
-
-
-@torch.no_grad()
-def activar_neurona(modelo, l: int, gen, denso: bool = False, excluir=()) -> tuple[int, int]:
-    """Activa una ranura de reserva de la capa ``l``. Conexiones de entrada al azar con pesos pequeños y de salida
-    con peso cero, así la función de la red casi no cambia (como Net2Net) y el gradiente decide qué aprende.
-    Devuelve ``(conexiones usadas, ranura)``; ``(0, -1)`` si no hay ranura libre. ``excluir``: ranuras que no se
-    pueden reutilizar (por ejemplo, las que se acaban de podar)."""
-    libres = [j for j in (modelo.activa(l) == 0).nonzero().flatten().tolist() if j not in set(excluir)]
-    if not libres:
-        return 0, -1
-    i = libres[0]
+def activar_neurona_densa(modelo, l: int, gen) -> int:
+    """Activa una ranura de reserva de la capa ``l`` con todas sus conexiones (crecimiento programado). Entrada con pesos
+    pequeños y salida en cero, así la función de la red casi no cambia (como Net2Net). Devuelve la ranura (-1 si no hay)."""
+    libres = (modelo.activa(l) == 0).nonzero().flatten()
+    if len(libres) == 0:
+        return -1
+    i = int(libres[0])
     modelo.activa(l)[i] = 1
-    c_in, c_out = costo_activar(modelo, l)
     ent = (modelo.activa(l - 1) > 0) if l > 0 else torch.ones(modelo.entradas, dtype=torch.bool)
     sal = (modelo.activa(l + 1) > 0) if l + 1 < modelo.ocultas else torch.ones(modelo.salidas, dtype=torch.bool)
-    pos_in, pos_out = ent.nonzero().flatten(), sal.nonzero().flatten()
-    if not denso:
-        pos_in = pos_in[torch.randperm(len(pos_in), generator=gen)[:c_in]]
-        pos_out = pos_out[torch.randperm(len(pos_out), generator=gen)[:c_out]]
-    modelo.mascara(l)[i, pos_in] = 1
-    modelo.mascara(l + 1)[pos_out, i] = 1
+    modelo.mascara(l)[i, ent] = 1
+    modelo.mascara(l + 1)[sal, i] = 1
     w = modelo.capas[l].weight
     w[i].zero_()
-    w[i, pos_in] = torch.randn(len(pos_in), generator=gen) / max(len(pos_in), 1) ** 0.5
+    w[i, ent] = torch.randn(int(ent.sum()), generator=gen) / max(int(ent.sum()), 1) ** 0.5
     modelo.capas[l + 1].weight[:, i] = 0
     modelo.capas[l].bias[i] = 0
-    return len(pos_in) + len(pos_out), i
+    return i
 
 
 @torch.no_grad()

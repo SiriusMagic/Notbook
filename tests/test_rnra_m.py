@@ -1,4 +1,4 @@
-"""Cuaderno 16 · RNRA-M: superred anidada, memoria portátil, elección de configuración e integración."""
+"""Cuaderno 16 · RNRA-M: superred anidada, memoria portátil y elección de configuración por RAM."""
 
 import copy
 
@@ -10,7 +10,6 @@ pytest.importorskip("sklearn")
 pytest.importorskip("scipy")
 
 from laboratorio.rnra import memoria_multiescala as mem  # noqa: E402
-from laboratorio.rnra import transferencia as tr  # noqa: E402
 from laboratorio.rnra.adaptador_dispositivo import dispositivos, elegir  # noqa: E402
 from laboratorio.rnra.superred import (SuperRed, bytes_modelo, cuantizar_modelo, cuantizar_tensor,  # noqa: E402
                                        entrenar, exactitud)
@@ -120,45 +119,3 @@ def test_elegir_respeta_la_ram_y_toma_el_ancho_mayor(red):
     w, b = elegir(red, d[0].ram_bytes)
     assert bytes_modelo(red, w, b) <= d[0].ram_bytes and w >= 4
     assert elegir(red, 10) is None
-
-
-def test_poner_nucleo_deja_los_extras_igual(red, datos):
-    nuevo = copy.deepcopy(red)
-    with torch.no_grad():
-        for c in nuevo.capas:
-            c.weight.add_(1.0)
-            c.bias.add_(1.0)
-    g = tr.poner_nucleo(red, nuevo, 4)
-    assert torch.equal(g.capas[1].weight[4:, :], red.capas[1].weight[4:, :])   # extras: igual
-    assert torch.equal(g.capas[1].weight[:4, :4], nuevo.capas[1].weight[:4, :4])  # núcleo: nuevo
-    assert torch.equal(tr.poner_nucleo(red, red, 4).capas[0].weight, red.capas[0].weight)
-
-
-@pytest.mark.parametrize("metodo", tr.METODOS_INTEGRACION)
-def test_integrar_corre_y_no_toca_la_red_original(metodo, red, datos):
-    x, y = datos
-    gen = torch.Generator().manual_seed(1)
-    xa, pa = tr.recuerdo(red, x, 50, gen)
-    assert pa.shape == (50, 3) and torch.allclose(pa.sum(1), torch.ones(50), atol=1e-5)
-    p = mem.reducir(red, 4)
-    chico = tr.aprender_en_pequeno(p, red, x, 2 - y, pasos=20)
-    antes = copy.deepcopy(red.state_dict())
-    g = tr.integrar(metodo, red, chico, 4, x, 2 - y, xa, pa, n_buffer=50, pasos=10)
-    assert all(torch.equal(v, antes[k]) for k, v in red.state_dict().items())
-    m = tr.medir_integracion(red, g, 4, (x, y), (x, 2 - y))
-    assert set(m) == {"A", "B", "olvido", "A_chico", "B_chico"}
-
-
-def test_el_repaso_reduce_el_olvido(datos):
-    """Ajustar con la tarea nueva sin repasar olvida más que repasando un recuerdo de la vieja."""
-    x, y = datos
-    torch.manual_seed(1)
-    red = entrenar(SuperRed(6, 3, ANCHOS), x, y, pasos=250, lote=64)
-    gen = torch.Generator().manual_seed(1)
-    xa, pa = tr.recuerdo(red, x, 100, gen)
-    yb = (y + 1) % 3
-    p = mem.reducir(red, 4)
-    chico = tr.aprender_en_pequeno(p, red, x, yb, pasos=20)
-    olv = {m: tr.medir_integracion(red, tr.integrar(m, red, chico, 4, x, yb, xa, pa, n_buffer=100, pasos=120), 4, (x, y), (x, yb))["olvido"]
-           for m in ("ajuste_convencional", "ajuste_con_repaso")}
-    assert olv["ajuste_con_repaso"] < olv["ajuste_convencional"]
