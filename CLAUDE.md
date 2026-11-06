@@ -1,6 +1,6 @@
 # Notbook
 
-Laboratorio de investigación en redes neuronales, medido contra la industria. `laboratorio-neuronal/` (14 cuadernos: 01-09 por tema, 10-11 competencias en GPU, 12 guía, 13 correr lo pendiente en GPU, 14 router + mini-expertos LoRA), `laboratorio/` (piezas en `.py` con pruebas y el banco de evaluación en `laboratorio/banco/`, con sus informes en `laboratorio/banco/informes/`), `RECOMENDACIONES.md` (qué usar en cada campo) y `vulkan/` (portal Wi-Fi). Repo privado.
+Laboratorio de investigación en redes neuronales, medido contra la industria. `laboratorio-neuronal/` (15 cuadernos: 01-09 por tema, 10-11 competencias en GPU, 12 guía, 13 correr lo pendiente en GPU, 14 router + mini-expertos LoRA, 15 redes de reorganización autónoma RNRA), `laboratorio/` (piezas en `.py` con pruebas, el banco de evaluación en `laboratorio/banco/`, con sus informes en `laboratorio/banco/informes/`, y `laboratorio/rnra/` con la red de reorganización autónoma del cuaderno 15), `RECOMENDACIONES.md` (qué usar en cada campo) y `vulkan/` (portal Wi-Fi). Repo privado.
 
 Al medir algo nuevo: datos de prueba que la red nunca vio, varias semillas, comparar con la industria y con la red estándar de su mejor tamaño; el informe va en `laboratorio/banco/informes/` y el resumen en `README.md` y `RECOMENDACIONES.md`.
 
@@ -23,6 +23,7 @@ python -m laboratorio.banco --clasicos                      # cuaderno 03: Rando
 python -m laboratorio.banco --video                         # cuaderno 04: interpolación de video contra U-Net
 python -m laboratorio.banco --refuerzo                      # cuaderno 06: entornos de refuerzo (necesita stable-baselines3)
 python -m laboratorio.banco --generativos07                 # cuaderno 07: D-ReG y HCMG
+python -m laboratorio.rnra --todo --ablaciones --semillas 10  # cuaderno 15: RNRA-v0 contra MLP fijos, poda, SET, RigL y control aleatorio (--rapido para probar)
 ```
 
 ## Reglas del dueño (aplican a todo cambio)

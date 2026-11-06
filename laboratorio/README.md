@@ -10,6 +10,7 @@ Partes de los cuadernos de [`laboratorio-neuronal/`](../laboratorio-neuronal) qu
 | `inicializadores.py` | Pesos iniciales sacados del atractor de Lorenz (sistema caótico) o de ruido Perlin, con escala He | 02 · Inicializador con Perlin y Lorenz | Calculaba la escala con las salidas en vez de las entradas |
 | `ensamble.py` | Voto ponderado de varios clasificadores | 08 · `weighted_vote` | Ya no carga modelos con `joblib.load` (puede ejecutar código ajeno) |
 | `banco/` | **Banco de evaluación**: mide cada idea de los cuadernos 01-08 contra la red estándar y contra la industria, con varias semillas, datos de prueba aparte y veredicto honesto. Cómo funciona: [`banco/README.md`](banco/README.md); resultados: [`banco/informes/`](banco/informes) | 01 a 08 · todos los experimentos «X contra RedEstandar» | Cada experimento se había probado una sola vez, sin datos de prueba aparte |
+| `rnra/` | **RNRA-v0**: MLP con máscaras que poda, activa neuronas de reserva y reasigna conexiones con presupuesto fijo, más sus comparadores (MLP fijos, poda por magnitud, SET, RigL, control aleatorio) y los experimentos E1-E5. `python -m laboratorio.rnra --rapido` | 15 · Redes de reorganización autónoma | Sin validar: hipótesis y umbrales fijados antes de medir |
 | `capas_torch.py` | Capa de inversión de gradiente (GRL) para PyTorch | 07 · Inversión de gradiente | Lambda como número y salida como copia |
 
 ## Uso

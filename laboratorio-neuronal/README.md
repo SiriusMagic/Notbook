@@ -1,6 +1,6 @@
 # Laboratorio neuronal
 
-Experimentos propios con redes neuronales: 9 cuadernos por tema (01-09), 2 cuadernos para competir en GPU (10-11), una guía de cómo funciona cada pieza (12) uno para correr en GPU lo pendiente (13) y el router con mini-expertos LoRA (14). Cada sección es un experimento independiente: ábrela y ejecútala de arriba hacia abajo.
+Experimentos propios con redes neuronales: 9 cuadernos por tema (01-09), 2 cuadernos para competir en GPU (10-11), una guía de cómo funciona cada pieza (12) uno para correr en GPU lo pendiente (13) el router con mini-expertos LoRA (14) y las redes de reorganización autónoma (15). Cada sección es un experimento independiente: ábrela y ejecútala de arriba hacia abajo.
 
 > Los cuadernos se guardan sin resultados (gráficos, tablas) para que sean livianos. Vuelve a ejecutar una sección para ver sus resultados. Las cifras medidas están en los informes del banco ([`../laboratorio/banco/informes/`](../laboratorio/banco/informes)) y el resumen de qué funciona, en el [README principal](../README.md).
 
@@ -26,6 +26,7 @@ En Colab: **Archivo → Abrir cuaderno → GitHub** → `SiriusMagic/Notbook` �
 | [`12_como_funciona_cada_pieza.ipynb`](./12_como_funciona_cada_pieza.ipynb) | Guía: cómo funciona cada pieza | Cómo funciona cada neurona, capa y arquitectura, qué resultado dio y por qué el tamaño cambia el resultado. Corre en CPU. | — |
 | [`13_correr_pendientes_en_gpu.ipynb`](./13_correr_pendientes_en_gpu.ipynb) | Correr lo pendiente en GPU | Repite con más datos las mediciones que en CPU quedaron cortas y deja los informes en un `.zip` en tu Drive. | — |
 | [`14_router_y_expertos_lora.ipynb`](./14_router_y_expertos_lora.ipynb) | Router troncal + mini-expertos LoRA | Un clasificador pequeño elige qué adaptador LoRA de oficio usar (electricidad, agricultura, mecánica, redes). Las etiquetas las pone DeepSeek si guardas `DEEPSEEK_API_KEY` en los Secretos de Colab; si no, un modelo pequeño de Hugging Face (Qwen 1,5B); si tampoco, reglas. Necesita GPU. | ⏳ |
+| [`15_redes_reorganizacion_autonoma.ipynb`](./15_redes_reorganizacion_autonoma.ipynb) | Redes de reorganización autónoma (RNRA) | Una red con máscaras que poda neuronas redundantes, activa neuronas de reserva solo si falta capacidad y reasigna conexiones hacia las regiones difíciles, con presupuesto fijo. Contra MLP fijos, poda por magnitud, crecimiento programado, SET, RigL y un control aleatorio; 5 experimentos y 6 ablaciones. Corre en CPU. | [informe](../laboratorio/banco/informes/15-reorganizacion-autonoma.md) |
 
 ## Índice de secciones (cuadernos 01-09)
 
